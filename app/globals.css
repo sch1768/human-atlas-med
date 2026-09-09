@@ -973,3 +973,41 @@ h1 .edition{font-family:inherit;font-weight:500;font-size:10px;letter-spacing:.0
 }
 
 
+
+/* Focused exploration: one panel on touch screens, readable bilingual tools. */
+.matched-query{margin:0;font-size:13px;color:#526471}.matched-query strong{color:#253d4d}
+.detail-sheet{overflow-y:auto!important;max-height:calc(100dvh - 135px)}
+.detail-actions .secondary-action{color:#425767;font-size:13px}
+.detail-expand{min-height:36px;color:#425767}
+.panel-foot{flex-wrap:wrap;gap:6px}.panel-foot button{font-size:11px}
+@media(max-width:767px){
+ .layers-panel{display:none!important}
+ .layers-panel.mobile-open{display:flex!important;top:auto!important;bottom:12px!important;left:12px!important;right:12px!important;width:auto!important;max-height:65dvh!important;background:#fff}
+ .search-panel{top:auto!important;bottom:12px;left:12px!important;right:12px!important;width:auto!important;max-height:70dvh;overflow-y:auto;background:#fff}
+ .panel-open .view-controls{visibility:hidden}
+ .detail-sheet,.detail-sheet.is-isolated{top:auto!important;bottom:max(12px,env(safe-area-inset-bottom))!important;left:12px!important;right:12px!important;width:auto!important;max-height:62dvh!important;padding:16px!important;background:#fff;gap:8px!important}
+ .detail-sheet.compact{max-height:250px!important}
+ .detail-sheet.compact .detail-actions{display:grid;grid-template-columns:1fr 1fr}
+ .detail-sheet.compact .detail-actions>button:nth-child(1),.detail-sheet.compact .detail-actions>button:nth-child(3),.detail-sheet.compact .detail-actions>button:nth-child(5),.detail-sheet.compact .inspector-relationships{display:none}
+ .detail-sheet .detail-kbd{display:none}
+ .detail-sheet .detail-header{gap:5px}
+ .detail-sheet .detail-header .structure-title{font-size:20px!important}
+ .detail-sheet .secondary-action{font-size:12px;white-space:normal;min-height:44px}
+ .floating-dock{bottom:max(12px,env(safe-area-inset-bottom));max-width:calc(100% - 24px);flex-wrap:wrap;justify-content:center;width:max-content}
+ body:has(.detail-sheet) .floating-dock{display:none}
+ .identity h1{font-size:24px}.identity .eyebrow{font-size:8px}
+ .identity-meta{max-width:190px;font-size:9px}
+ .search-result-name{font-size:15px}.search-result-hanja{font-size:13px}
+}
+@media(max-height:600px) and (orientation:landscape) and (min-width:768px){
+ .detail-sheet{top:12px!important;bottom:12px!important;max-height:calc(100dvh - 24px)!important}
+}
+.system-isolate{width:30px;min-width:30px;padding:4px;color:#607482}.system-isolate:hover{background:#e8eef2}.system-name{flex:1}
+@media(max-width:767px){.system-isolate{min-width:44px;min-height:44px}}
+
+/* Disclosure is only relevant where the compact inspector actually hides content. */
+.detail-sheet .detail-expand{display:none}
+@media(max-width:767px){.detail-sheet .detail-expand{display:flex}}
+.relationship-chip{display:grid;grid-template-columns:88px minmax(0,1fr);gap:10px;text-align:left;align-items:center}
+.rel-tag{display:flex;align-items:center;justify-content:center;width:88px;height:36px;padding:4px 6px;border-radius:5px;font-size:11px;line-height:1.25;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;text-align:center}
+.rel-name{min-width:0;text-align:left;white-space:normal;overflow-wrap:anywhere}
