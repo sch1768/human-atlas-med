@@ -1,7 +1,7 @@
 import {flushSync} from 'react-dom';
 import {registerAtlasTools} from './agent-tools';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Activity,ArrowUpRight,ChevronDown,ChevronRight,ChevronUp,EyeOff,Focus,Info,Layers3,Pause,RotateCcw,RotateCw,Search,Undo2,X} from 'lucide-react';
+import {Activity,ArrowUpRight,ChevronDown,ChevronLeft,ChevronRight,ChevronUp,EyeOff,Focus,Info,Layers3,Pause,RotateCcw,RotateCw,Search,Undo2,X} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
 import {Switch} from '@/components/ui/switch';
@@ -10,6 +10,7 @@ import AnatomyScene from './scene';
 import {DEFAULT_VISIBLE,SYSTEMS,EXPLANATIONS,explanation,type Atlas,type Concept,type SceneState,type SystemId,type View} from './anatomy';
 import {getDisplayName,getHanjaName,matchesSearchTerm,getKoreanTerms} from './korean-anatomy';
 import {buildCompositeConcepts} from './composite-concepts';
+import {REGIONS,getRegionPartIds,type RegionId,type SubregionId} from './regional-anatomy';
 
 const initial:SceneState={explode:0,visible:DEFAULT_VISIBLE,selected:[],isolate:false,view:'three-quarter',rotate:false,reset:0,ghost:false,hidden:[]};
 
@@ -31,6 +32,9 @@ const FEATURED_ORGANS: {name:string;label:string;color:string}[] = [
 export default function Home(){
  const detailTitle=useRef<HTMLHeadingElement>(null);
  const [atlas,setAtlas]=useState<Atlas|null>(null),[state,setState]=useState(initial),[progress,setProgress]=useState(0),[error,setError]=useState(''),[panel,setPanel]=useState<'layers'|'search'|null>(null),[details,setDetails]=useState(false),[about,setAbout]=useState(false),[query,setQuery]=useState(''),[chosen,setChosen]=useState<Concept|null>(null),[showQuickPicks,setShowQuickPicks]=useState(true),[selectedResultIndex,setSelectedResultIndex]=useState(-1);
+ const [layerTab,setLayerTab]=useState<'systems'|'regions'>('systems');
+ const [selectedRegion,setSelectedRegion]=useState<RegionId|null>(null);
+ const [selectedSubregion,setSelectedSubregion]=useState<SubregionId|null>(null);
  useEffect(()=>{const abort=new AbortController();setProgress(0);setError('');setAtlas(null);setChosen(null);setDetails(false);setState({...initial,visible:DEFAULT_VISIBLE});fetch('/models/atlas.json',{signal:abort.signal}).then(r=>{if(!r.ok)throw new Error('The anatomy catalogue could not be loaded.');return r.json();}).then(data=>setAtlas(data as Atlas)).catch(e=>{if(e.name!=='AbortError')setError(e.message);});return()=>abort.abort();},[]);
  const hideSelected=()=>{if(state.selected.length===0)return;const newlyHidden=state.selected;setState(s=>({...s,hidden:[...(s.hidden??[]),...newlyHidden],selected:[],isolate:false}));setDetails(false);};
  const undoHide=()=>{if(!state.hidden||state.hidden.length===0)return;setState(s=>{const next=[...(s.hidden??[])],restored=next.pop();return{...s,hidden:next,...(restored?{selected:[restored]}:{})};});};
@@ -91,8 +95,40 @@ export default function Home(){
  useEffect(()=>{if(!atlas)return;return registerAtlasTools(atlas,c=>flushSync(()=>choose(c)));},[atlas]);
  const choosePart=(id:string,isDouble=false)=>{const p=parts.get(id);if(!p)return;setChosen({id:p.conceptId,name:p.name,elements:[id]});setState(s=>({...s,selected:[id],isolate:false,rotate:false,...(isDouble?{focusNonce:(s.focusNonce??0)+1}:{})}));setDetails(true);setPanel(null);};
  const toggle=(id:SystemId)=>{setDetails(false);setState(s=>({...s,selected:[],isolate:false,visible:s.visible.includes(id)?s.visible.filter(x=>x!==id):[...s.visible,id]}));};
- const reset=()=>{setState(s=>({...initial,visible:DEFAULT_VISIBLE,reset:s.reset+1}));setChosen(null);setDetails(false);setPanel(null);};
+ const reset=()=>{setSelectedRegion(null);setSelectedSubregion(null);setState(s=>({...initial,visible:DEFAULT_VISIBLE,reset:s.reset+1,hidden:[],focusTargetIds:undefined}));setChosen(null);setDetails(false);setPanel(null);};
  const openPanel=(next:'layers'|'search')=>{setDetails(false);setPanel(p=>p===next?null:next);};
+
+ const handleSelectRegion=(regionId:RegionId)=>{
+  if(!atlas)return;
+  setSelectedRegion(regionId);
+  setSelectedSubregion(null);
+  const partIds=getRegionPartIds(atlas,regionId);
+  const partIdSet=new Set(partIds);
+  const newlyHidden=atlas.parts.filter(p=>!partIdSet.has(p.id)).map(p=>p.id);
+  setState(s=>({...s,hidden:newlyHidden,selected:[],focusTargetIds:partIds,focusNonce:(s.focusNonce??0)+1,isolate:false}));
+  setDetails(false);
+ };
+
+ const handleSelectSubregion=(regionId:RegionId,subId:SubregionId)=>{
+  if(!atlas)return;
+  setSelectedRegion(regionId);
+  setSelectedSubregion(subId);
+  const partIds=getRegionPartIds(atlas,regionId,subId);
+  const partIdSet=new Set(partIds);
+  const newlyHidden=atlas.parts.filter(p=>!partIdSet.has(p.id)).map(p=>p.id);
+  setState(s=>({...s,hidden:newlyHidden,selected:[],focusTargetIds:partIds,focusNonce:(s.focusNonce??0)+1,isolate:false}));
+  setDetails(false);
+ };
+
+ const handleResetToWholeBody=()=>{
+  setSelectedRegion(null);
+  setSelectedSubregion(null);
+  setState(s=>({...s,hidden:[],selected:[],focusTargetIds:undefined,reset:s.reset+1}));
+  setDetails(false);
+ };
+
+ const activeRegionObj=REGIONS.find(r=>r.id===selectedRegion);
+
  return <main className="studio">
   {atlas&&<AnatomyScene atlas={atlas} state={{...state,inspectorOpen:details&&selectedParts.length>0}} onSelect={choosePart} onProgress={n=>{setProgress(n);if(n===100)setError('');}} onError={setError}/>}
   <div className="vignette"/>
@@ -103,10 +139,65 @@ export default function Home(){
    <Button variant="ghost" className="icon-button" aria-label="About this atlas" onClick={()=>{setDetails(false);setPanel(null);setAbout(true);}}><Info size={18}/></Button>
   </nav>
   <section className={`layers-panel glass ${panel==='layers'?'mobile-open':''}`} aria-label="Anatomical layers">
-   <div className="panel-heading"><span>Systems</span><Button variant="ghost" className="mobile-only icon-button" onClick={()=>setPanel(null)} aria-label="Close systems"><X size={18}/></Button><Badge variant="secondary" className="desktop-only small-number">{activeSystems.length}</Badge></div>
-   <div className="layer-presets"><Button variant="ghost" aria-pressed={activeSystems.every(x=>state.visible.includes(x.id))} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:activeSystems.map(x=>x.id)}))}>All</Button><Button variant="ghost" aria-pressed={state.visible.length===1&&state.visible[0]==='skeletal'} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['skeletal']}))}>Skeleton</Button><Button variant="ghost" aria-pressed={state.visible.length===6&&['cardiac','respiratory','digestive','urinary','endocrine','reproductive'].every(id=>state.visible.includes(id as SystemId))} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['cardiac','respiratory','digestive','urinary','endocrine','reproductive']}))}>Organs</Button></div>
-   <div className="system-list">{activeSystems.map(s=><div className={`system-row ${state.visible.includes(s.id)?'enabled':''}`} key={s.id}><Button variant="ghost" className="system-name" title={`Show only ${s.name.toLowerCase()}`} onClick={()=>setState(v=>({...v,visible:[s.id],isolate:false,selected:[]}))}><span className="system-dot" style={{background:s.color}}/>{s.name}<span className="system-count">{counts[s.id]}</span></Button><Switch checked={state.visible.includes(s.id)} onCheckedChange={()=>toggle(s.id)} aria-label={`Show ${s.name.toLowerCase()}`} /></div>)}</div>
-   <div className="panel-foot"><span>{visibleCount.toLocaleString()} pieces visible</span><Button variant="ghost" onClick={()=>setState(s=>({...s,visible:[],selected:[],isolate:false}))}>Hide all</Button></div>
+   <div className="panel-heading">
+    <div className="panel-tab-group">
+     <button type="button" className={`panel-tab ${layerTab==='systems'?'active':''}`} onClick={()=>setLayerTab('systems')}>Systems</button>
+     <button type="button" className={`panel-tab ${layerTab==='regions'?'active':''}`} onClick={()=>setLayerTab('regions')}>Regions</button>
+    </div>
+    <Button variant="ghost" className="mobile-only icon-button" onClick={()=>setPanel(null)} aria-label="Close panel"><X size={18}/></Button>
+   </div>
+
+   {layerTab==='systems'?(
+    <>
+     <div className="layer-presets"><Button variant="ghost" aria-pressed={activeSystems.every(x=>state.visible.includes(x.id))} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:activeSystems.map(x=>x.id)}))}>All</Button><Button variant="ghost" aria-pressed={state.visible.length===1&&state.visible[0]==='skeletal'} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['skeletal']}))}>Skeleton</Button><Button variant="ghost" aria-pressed={state.visible.length===6&&['cardiac','respiratory','digestive','urinary','endocrine','reproductive'].every(id=>state.visible.includes(id as SystemId))} onClick={()=>setState(s=>({...s,selected:[],isolate:false,visible:['cardiac','respiratory','digestive','urinary','endocrine','reproductive']}))}>Organs</Button></div>
+     <div className="system-list">{activeSystems.map(s=><div className={`system-row ${state.visible.includes(s.id)?'enabled':''}`} key={s.id}><Button variant="ghost" className="system-name" title={`Show only ${s.name.toLowerCase()}`} onClick={()=>setState(v=>({...v,visible:[s.id],isolate:false,selected:[]}))}><span className="system-dot" style={{background:s.color}}/>{s.name}<span className="system-count">{counts[s.id]}</span></Button><Switch checked={state.visible.includes(s.id)} onCheckedChange={()=>toggle(s.id)} aria-label={`Show ${s.name.toLowerCase()}`} /></div>)}</div>
+     <div className="panel-foot"><span>{visibleCount.toLocaleString()} pieces visible</span><Button variant="ghost" onClick={()=>setState(s=>({...s,visible:[],selected:[],isolate:false}))}>Hide all</Button></div>
+    </>
+   ):(
+    <div className="regions-container">
+     {!selectedRegion?(
+      <div className="regions-grid">
+       {REGIONS.map(reg=>(
+        <button key={reg.id} type="button" className="region-card" onClick={()=>handleSelectRegion(reg.id)}>
+         <span className="region-card-icon">{reg.icon}</span>
+         <span className="region-name-en">{reg.name}</span>
+        </button>
+       ))}
+       <button type="button" className="region-card whole-body" onClick={handleResetToWholeBody}>
+        <span className="region-card-icon">🌐</span>
+        <span className="region-name-en">Whole Body</span>
+       </button>
+      </div>
+     ):(
+      <div className="subregion-view">
+       <div className="region-sub-header">
+        <Button variant="ghost" className="subregion-back-btn" onClick={()=>{setSelectedRegion(null);setSelectedSubregion(null);handleResetToWholeBody();}}>
+         <ChevronLeft size={16}/> <span>All Regions</span>
+        </Button>
+        <div className="current-region-badge">
+         <span className="region-header-icon">{activeRegionObj?.icon}</span>
+         <strong>{activeRegionObj?.name}</strong>
+        </div>
+        <Button variant="outline" className={`subregion-all-btn ${selectedSubregion===null?'active':''}`} onClick={()=>handleSelectRegion(selectedRegion)}>
+         <span>All {activeRegionObj?.name} ({atlas?getRegionPartIds(atlas,selectedRegion).length:0} pieces)</span>
+        </Button>
+       </div>
+       <div className="subregion-list">
+        {activeRegionObj?.subregions.map(sub=>{
+         const isSubActive=selectedSubregion===sub.id;
+         const subCount=atlas?getRegionPartIds(atlas,selectedRegion,sub.id).length:0;
+         return (
+          <button key={sub.id} type="button" className={`subregion-row ${isSubActive?'active':''}`} onClick={()=>handleSelectSubregion(selectedRegion,sub.id)}>
+           <span className="subregion-name">{sub.name}</span>
+           <span className="subregion-count">{subCount}</span>
+          </button>
+         );
+        })}
+       </div>
+      </div>
+     )}
+    </div>
+   )}
   </section>
   {panel==='search'&&<section className="search-panel glass" aria-label="Find anatomy">
    <div className="panel-heading"><span>Find a structure</span><Button variant="ghost" className="icon-button" onClick={()=>setPanel(null)} aria-label="Close search"><X size={18}/></Button></div>
@@ -166,9 +257,9 @@ export default function Home(){
     </div>
    )}
   </section>}
-  <nav className="view-controls glass" aria-label="Camera controls">{(['three-quarter','front','side','back'] as View[]).map((v,i)=><Button variant="ghost" key={v} className={state.view===v?'active':''} aria-pressed={state.view===v} onClick={()=>setState(s=>({...s,view:v,reset:s.reset+1,rotate:false}))} title={`${v} view`} aria-label={`${v} view`}><span>{['¾','F','S','B'][i]}</span></Button>)}<i/><Button variant="ghost" aria-label={state.rotate?'Pause rotation':'Rotate body'} title="Auto rotate" className={state.rotate?'active':''} onClick={()=>setState(s=>({...s,rotate:!s.rotate}))}>{state.rotate?<Pause size={17}/>:<RotateCw size={18}/>}</Button><Button variant="ghost" aria-label="Reset view and layers" title="Reset" onClick={reset}><RotateCcw size={17}/></Button></nav>
+  <nav className={`view-controls glass ${details&&selectedParts.length>0?'shifted':''}`} aria-label="Camera controls">{(['three-quarter','front','side','back'] as View[]).map((v,i)=><Button variant="ghost" key={v} className={state.view===v?'active':''} aria-pressed={state.view===v} onClick={()=>setState(s=>({...s,view:v,reset:s.reset+1,rotate:false}))} title={`${v} view`} aria-label={`${v} view`}><span>{['¾','F','S','B'][i]}</span></Button>)}<i/><Button variant="ghost" aria-label={state.rotate?'Pause rotation':'Rotate body'} title="Auto rotate" className={state.rotate?'active':''} onClick={()=>setState(s=>({...s,rotate:!s.rotate}))}>{state.rotate?<Pause size={17}/>:<RotateCw size={18}/>}</Button><Button variant="ghost" aria-label="Reset view and layers" title="Reset" onClick={reset}><RotateCcw size={17}/></Button></nav>
   {(state.selected.length>0||(state.hidden?.length??0)>0)&&<div className="floating-dock glass" role="toolbar" aria-label="Quick dissection tools">{state.selected.length>0&&<><Button variant="ghost" onClick={()=>setState(s=>({...s,focusNonce:(s.focusNonce??0)+1,isolate:false}))} title="Focus on structure (F)"><Focus size={15}/><span>Focus</span><kbd>F</kbd></Button><Button variant="ghost" onClick={hideSelected} title="Hide structure (H)"><EyeOff size={15}/><span>Hide</span><kbd>H</kbd></Button><Button variant="ghost" className={state.ghost?'active':''} onClick={()=>setState(s=>({...s,ghost:!state.ghost,isolate:false}))} title="Toggle Ghost mode (G)"><Layers3 size={15}/><span>{state.ghost?'Ghost':'Solid'}</span><kbd>G</kbd></Button><Button variant="ghost" className={state.isolate?'active':''} onClick={()=>setState(s=>({...s,isolate:!state.isolate,explode:0}))} title="Isolate structure (I)"><span>{state.isolate?'Show all':'Isolate'}</span><kbd>I</kbd></Button></>}{(state.hidden?.length??0)>0&&<>{state.selected.length>0&&<i className="dock-sep"/>}<Button variant="ghost" onClick={undoHide} title="Undo hide (U)"><Undo2 size={15}/><span>Undo ({state.hidden!.length})</span><kbd>U</kbd></Button><Button variant="ghost" onClick={resetHidden} title="Unhide all structures"><span>Unhide all</span></Button></>}</div>}
-  <footer className="studio-footer"><span><b>Shortcuts:</b> F Focus · H Hide · G Ghost · I Isolate · U Undo · / Search <b>·</b> Double-tap to focus</span></footer>
+  <footer className="studio-footer"><span>Drag to orbit · Pinch to zoom · Tap to inspect · Double-tap to focus</span></footer>
   {progress<100&&!error&&<div className="loading glass" role="status"><Activity size={18}/><div><strong>Preparing the anatomy</strong><span>{progress}% · Loading {atlas?.parts.length.toLocaleString()??'2,234'} pieces</span><div className="loading-track"><i style={{width:`${progress}%`}}/></div></div></div>}
   {error&&<div className="loading glass error" role="alert"><p>{error}</p><Button variant="ghost" onClick={()=>location.reload()}>Reload viewer</Button></div>}
   <Sheet open={details&&selectedParts.length>0} modal={false} disablePointerDismissal onOpenChange={setDetails}><SheetContent initialFocus={detailTitle} className={`detail-sheet glass ${state.isolate?'is-isolated':''}`} showCloseButton={true}><div className="detail-header"><div className="detail-accent" style={{background:system?.color}}/><div className="eyebrow">{system?.name??'ANATOMY'}</div><SheetTitle ref={detailTitle} tabIndex={-1} className="structure-title">{chosen?getDisplayName(chosen.name):''}</SheetTitle>{chosen&&getHanjaName(chosen.name)&&<div className="structure-tags"><Badge variant="outline" className="hanja-badge">구용어: {getHanjaName(chosen.name)}</Badge></div>}<SheetDescription className="sr-only">Structure inspector</SheetDescription></div><div className="detail-actions"><Button className="primary-action" onClick={()=>setState(s=>({...s,focusNonce:(s.focusNonce??0)+1,isolate:false}))}><Focus size={18}/>Focus</Button><Button variant="outline" className={`secondary-action ${state.ghost?'active':''}`} onClick={()=>setState(s=>({...s,ghost:!state.ghost,isolate:false}))}><Layers3 size={16}/>{state.ghost?'Ghost':'Solid'}</Button><Button variant="outline" className="secondary-action" onClick={hideSelected}><EyeOff size={16}/>Hide structure</Button><Button variant="outline" className={`secondary-action ${state.isolate?'active':''}`} onClick={()=>setState(s=>({...s,isolate:!state.isolate,explode:0}))}>{state.isolate?'Show all':'Isolate'}</Button><Button variant="ghost" className="secondary-action" onClick={()=>{setState(s=>({...s,selected:[],isolate:false,ghost:false}));setDetails(false);}}>Clear</Button></div></SheetContent></Sheet>

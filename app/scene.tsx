@@ -151,7 +151,8 @@ if (ghostMode > 0.5 && partSelected < 0.5) {
    if(disposed)return;frame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),s=latest.current;
    if(s.focusNonce!==undefined&&s.focusNonce!==lastFocusNonce){
     lastFocusNonce=s.focusNonce;
-    if(s.selected.length>0&&!s.isolate)triggerFlyTo(s.selected);
+    const flyIds = (s.focusTargetIds && s.focusTargetIds.length > 0) ? s.focusTargetIds : s.selected;
+    if(flyIds.length>0&&!s.isolate)triggerFlyTo(flyIds);
    }
    if(focusTransition){
     const now=performance.now(),progress=Math.min(1,(now-focusTransition.startTime)/focusTransition.duration);
