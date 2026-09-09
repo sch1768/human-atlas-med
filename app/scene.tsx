@@ -114,9 +114,20 @@ if (ghostMode > 0.5) {
   const move=(e:PointerEvent)=>{tap.move(e.pointerId,e.clientX,e.clientY);if(e.buttons||amount<.5||e.pointerType==='touch'){hover.hidden=true;return;}const rect=el.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top,index=findTarget(x,y,12);hover.hidden=index<0;renderer.domElement.style.cursor=index<0?'grab':'pointer';if(index>=0){hover.textContent=atlas.parts[index].name;hover.style.left=`${Math.max(8,Math.min(x+14,el.clientWidth-260))}px`;hover.style.top=`${Math.max(8,Math.min(y+18,el.clientHeight-55))}px`;}};
   const cancel=(e:PointerEvent)=>tap.cancel(e.pointerId);
   const triggerFlyTo=(selectedIds:string[])=>{
-   const box=new T.Box3();
+   if(!selectedIds||selectedIds.length===0)return;
+   const selectedSet=new Set(selectedIds);
+   const matchedIndices:number[]=[];
    atlas.parts.forEach((p,i)=>{
-    if(selectedIds.includes(p.id))box.union(bounds[i].clone().translate(new T.Vector3(data[i*4],data[i*4+1],data[i*4+2])));
+    if(selectedSet.has(p.id))matchedIndices.push(i);
+   });
+   if(matchedIndices.length===0)return;
+   const hasRight=matchedIndices.some(i=>centers[i].x>0.05);
+   const hasLeft=matchedIndices.some(i=>centers[i].x<-0.05);
+   const isBilateral=hasRight&&hasLeft;
+   const targetIndices=isBilateral?matchedIndices.filter(i=>centers[i].x>0.01):matchedIndices;
+   const box=new T.Box3();
+   (targetIndices.length>0?targetIndices:matchedIndices).forEach(i=>{
+    box.union(bounds[i].clone().translate(new T.Vector3(data[i*4],data[i*4+1],data[i*4+2])));
    });
    if(box.isEmpty())return;
    const center=box.getCenter(new T.Vector3()),size=box.getSize(new T.Vector3());
