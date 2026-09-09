@@ -63,20 +63,23 @@ export default function AnatomyScene({atlas,state,onSelect,onProgress,onError}:P
     shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
 if (ghostMode > 0.5) {
   if (partSelected < 0.5) {
-    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.88, 0.91, 0.94), 0.85);
-    diffuseColor.a = min(diffuseColor.a, 0.07);
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.85, 0.89, 0.93), 0.88);
+    diffuseColor.a = min(diffuseColor.a, 0.06);
   } else {
-    #if IS_SKELETAL
-      diffuseColor.rgb = vec3(1.0, 0.90, 0.08);
-    #endif
+    diffuseColor.rgb = vec3(1.0, 0.86, 0.06);
     diffuseColor.a = 1.0;
   }
 } else {
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.90, 0.08), partSelected * 0.92);
 }`);
     shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',`#include <dithering_fragment>
-if (ghostMode > 0.5 && partSelected < 0.5) {
-  gl_FragColor.a = min(gl_FragColor.a, 0.07);
+if (ghostMode > 0.5) {
+  if (partSelected < 0.5) {
+    gl_FragColor.a = min(gl_FragColor.a, 0.06);
+  } else {
+    gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0, 0.86, 0.06), 0.90);
+    gl_FragColor.a = 1.0;
+  }
 }`);
    };materials.push(m);return m;
   };

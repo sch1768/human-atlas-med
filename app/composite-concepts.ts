@@ -18,6 +18,18 @@ export function buildCompositeConcepts(atlas: Atlas): Concept[] {
     hamstrings: { right: [], left: [] },
     pronator_teres: { right: [], left: [] },
     rotator_cuff: { right: [], left: [] },
+    // 혈관 및 신경 복합 개념 (Vascular & Neural Composites)
+    circle_of_willis: { right: [], left: [] },
+    celiac_trunk_system: { right: [], left: [] },
+    brachial_plexus: { right: [], left: [] },
+    coronary_circulation: { right: [], left: [] },
+    portal_triad: { right: [], left: [] },
+    hepatic_segments: { right: [], left: [] },
+    cranial_nerves: { right: [], left: [] },
+    extraocular_muscles: { right: [], left: [] },
+    pelvic_floor: { right: [], left: [] },
+    intrinsic_hand_muscles: { right: [], left: [] },
+    superficial_flexors_forearm: { right: [], left: [] },
   };
 
   const rotatorParts = ['supraspinatus', 'infraspinatus', 'teres minor', 'subscapularis'];
@@ -99,6 +111,174 @@ export function buildCompositeConcepts(atlas: Atlas): Concept[] {
         else if (n.includes('left')) groups.rotator_cuff.left.push(...c.elements);
       }
     }
+
+    // 12. Circle of Willis (대뇌동맥고리 / 윌리스 서클)
+    if (
+      n.includes('anterior cerebral artery') ||
+      n.includes('anterior communicating artery') ||
+      n.includes('internal carotid artery') ||
+      n.includes('posterior communicating artery') ||
+      n.includes('posterior cerebral artery') ||
+      n.includes('basilar artery')
+    ) {
+      if (n.includes('right')) groups.circle_of_willis.right.push(...c.elements);
+      else if (n.includes('left')) groups.circle_of_willis.left.push(...c.elements);
+      else {
+        groups.circle_of_willis.right.push(...c.elements);
+        groups.circle_of_willis.left.push(...c.elements);
+      }
+    }
+
+    // 13. Celiac Trunk System (복강동맥 분지계)
+    if (
+      n.includes('celiac artery') ||
+      n.includes('celiac trunk') ||
+      n.includes('left gastric artery') ||
+      n.includes('splenic artery') ||
+      n.includes('common hepatic artery') ||
+      n.includes('proper hepatic artery')
+    ) {
+      groups.celiac_trunk_system.right.push(...c.elements);
+      groups.celiac_trunk_system.left.push(...c.elements);
+    }
+
+    // 14. Brachial Plexus (팔신경총 / 상완신경총)
+    if (n.includes('brachial plexus')) {
+      if (n.includes('right')) groups.brachial_plexus.right.push(...c.elements);
+      else if (n.includes('left')) groups.brachial_plexus.left.push(...c.elements);
+      else {
+        groups.brachial_plexus.right.push(...c.elements);
+        groups.brachial_plexus.left.push(...c.elements);
+      }
+    }
+
+    // 15. Coronary Circulation (관상동맥 순환계)
+    if (
+      n.includes('coronary artery') ||
+      n.includes('circumflex branch') ||
+      n.includes('interventricular branch')
+    ) {
+      if (n.includes('right')) groups.coronary_circulation.right.push(...c.elements);
+      else if (n.includes('left')) groups.coronary_circulation.left.push(...c.elements);
+      else {
+        groups.coronary_circulation.right.push(...c.elements);
+        groups.coronary_circulation.left.push(...c.elements);
+      }
+    }
+
+    // 16. Portal Triad (문맥삼합)
+    if (
+      n.includes('portal vein') ||
+      n.includes('proper hepatic artery') ||
+      n.includes('common bile duct')
+    ) {
+      groups.portal_triad.right.push(...c.elements);
+      groups.portal_triad.left.push(...c.elements);
+    }
+
+    // 17. Hepatic Segments / Portal distribution
+    if (
+      n.includes('portal vein') ||
+      n.includes('hepatic vein') ||
+      n.includes('liver segment')
+    ) {
+      if (n.includes('right')) groups.hepatic_segments.right.push(...c.elements);
+      else if (n.includes('left')) groups.hepatic_segments.left.push(...c.elements);
+      else {
+        groups.hepatic_segments.right.push(...c.elements);
+        groups.hepatic_segments.left.push(...c.elements);
+      }
+    }
+
+    // 18. Extraocular Muscles (외안근)
+    if (
+      n.includes('superior rectus') ||
+      n.includes('inferior rectus') ||
+      n.includes('medial rectus') ||
+      n.includes('lateral rectus') ||
+      n.includes('superior oblique') ||
+      n.includes('inferior oblique')
+    ) {
+      if (n.includes('right')) groups.extraocular_muscles.right.push(...c.elements);
+      else if (n.includes('left')) groups.extraocular_muscles.left.push(...c.elements);
+      else {
+        groups.extraocular_muscles.right.push(...c.elements);
+        groups.extraocular_muscles.left.push(...c.elements);
+      }
+    }
+
+    // 19. Pelvic Floor (골반바닥)
+    if (
+      n.includes('pubococcygeus') ||
+      n.includes('puborectalis') ||
+      n.includes('iliococcygeus') ||
+      n.includes('levator ani') ||
+      n.includes('coccygeus')
+    ) {
+      if (n.includes('right')) groups.pelvic_floor.right.push(...c.elements);
+      else if (n.includes('left')) groups.pelvic_floor.left.push(...c.elements);
+      else {
+        groups.pelvic_floor.right.push(...c.elements);
+        groups.pelvic_floor.left.push(...c.elements);
+      }
+    }
+
+    // 20. Intrinsic Hand Muscles (손의 고유근)
+    if (
+      n.includes('lumbrical') ||
+      n.includes('dorsal interosseous') ||
+      n.includes('palmar interosseous') ||
+      n.includes('abductor pollicis brevis') ||
+      n.includes('flexor pollicis brevis') ||
+      n.includes('opponens pollicis') ||
+      n.includes('adductor pollicis') ||
+      n.includes('abductor digiti minimi')
+    ) {
+      if (n.includes('right')) groups.intrinsic_hand_muscles.right.push(...c.elements);
+      else if (n.includes('left')) groups.intrinsic_hand_muscles.left.push(...c.elements);
+      else {
+        groups.intrinsic_hand_muscles.right.push(...c.elements);
+        groups.intrinsic_hand_muscles.left.push(...c.elements);
+      }
+    }
+
+    // 21. Superficial Flexors of Forearm (전완 앞칸 얕은층)
+    if (
+      n.includes('pronator teres') ||
+      n.includes('flexor carpi radialis') ||
+      n.includes('palmaris longus') ||
+      n.includes('flexor carpi ulnaris')
+    ) {
+      if (n.includes('right')) groups.superficial_flexors_forearm.right.push(...c.elements);
+      else if (n.includes('left')) groups.superficial_flexors_forearm.left.push(...c.elements);
+      else {
+        groups.superficial_flexors_forearm.right.push(...c.elements);
+        groups.superficial_flexors_forearm.left.push(...c.elements);
+      }
+    }
+
+    // 22. Cranial Nerves (뇌신경계)
+    if (
+      n.includes('cranial nerve') ||
+      n.includes('optic nerve') ||
+      n.includes('oculomotor nerve') ||
+      n.includes('trochlear nerve') ||
+      n.includes('trigeminal nerve') ||
+      n.includes('abducens nerve') ||
+      n.includes('facial nerve') ||
+      n.includes('vestibulocochlear nerve') ||
+      n.includes('glossopharyngeal nerve') ||
+      n.includes('vagus nerve') ||
+      n.includes('accessory nerve') ||
+      n.includes('hypoglossal nerve')
+    ) {
+      if (n.includes('right')) groups.cranial_nerves.right.push(...c.elements);
+      else if (n.includes('left')) groups.cranial_nerves.left.push(...c.elements);
+      else {
+        groups.cranial_nerves.right.push(...c.elements);
+        groups.cranial_nerves.left.push(...c.elements);
+      }
+    }
   }
 
   // Hamstrings = Biceps Femoris + Semitendinosus + Semimembranosus
@@ -113,18 +293,29 @@ export function buildCompositeConcepts(atlas: Atlas): Concept[] {
     baseName: string;
     idPrefix: string;
   }[] = [
-    { key: 'trapezius', baseName: 'trapezius', idPrefix: 'COMPOSITE_TRAPEZIUS' },
-    { key: 'deltoid', baseName: 'deltoid', idPrefix: 'COMPOSITE_DELTOID' },
-    { key: 'pectoralis_major', baseName: 'pectoralis major', idPrefix: 'COMPOSITE_PEC_MAJOR' },
-    { key: 'triceps_brachii', baseName: 'triceps brachii', idPrefix: 'COMPOSITE_TRICEPS' },
-    { key: 'biceps_brachii', baseName: 'biceps brachii', idPrefix: 'COMPOSITE_BICEPS' },
-    { key: 'gastrocnemius', baseName: 'gastrocnemius', idPrefix: 'COMPOSITE_GASTRO' },
-    { key: 'quadriceps_femoris', baseName: 'quadriceps femoris', idPrefix: 'COMPOSITE_QUAD' },
-    { key: 'biceps_femoris', baseName: 'biceps femoris', idPrefix: 'COMPOSITE_BICEPS_FEM' },
-    { key: 'hamstrings', baseName: 'hamstrings', idPrefix: 'COMPOSITE_HAMSTRINGS' },
-    { key: 'pronator_teres', baseName: 'pronator teres', idPrefix: 'COMPOSITE_PRONATOR' },
-    { key: 'rotator_cuff', baseName: 'rotator cuff', idPrefix: 'COMPOSITE_ROTATOR_CUFF' },
-  ];
+      { key: 'trapezius', baseName: 'trapezius', idPrefix: 'COMPOSITE_TRAPEZIUS' },
+      { key: 'deltoid', baseName: 'deltoid', idPrefix: 'COMPOSITE_DELTOID' },
+      { key: 'pectoralis_major', baseName: 'pectoralis major', idPrefix: 'COMPOSITE_PEC_MAJOR' },
+      { key: 'triceps_brachii', baseName: 'triceps brachii', idPrefix: 'COMPOSITE_TRICEPS' },
+      { key: 'biceps_brachii', baseName: 'biceps brachii', idPrefix: 'COMPOSITE_BICEPS' },
+      { key: 'gastrocnemius', baseName: 'gastrocnemius', idPrefix: 'COMPOSITE_GASTRO' },
+      { key: 'quadriceps_femoris', baseName: 'quadriceps femoris', idPrefix: 'COMPOSITE_QUAD' },
+      { key: 'biceps_femoris', baseName: 'biceps femoris', idPrefix: 'COMPOSITE_BICEPS_FEM' },
+      { key: 'hamstrings', baseName: 'hamstrings', idPrefix: 'COMPOSITE_HAMSTRINGS' },
+      { key: 'pronator_teres', baseName: 'pronator teres', idPrefix: 'COMPOSITE_PRONATOR' },
+      { key: 'rotator_cuff', baseName: 'rotator cuff', idPrefix: 'COMPOSITE_ROTATOR_CUFF' },
+      { key: 'circle_of_willis', baseName: 'circle of willis', idPrefix: 'COMPOSITE_CIRCLE_OF_WILLIS' },
+      { key: 'celiac_trunk_system', baseName: 'celiac trunk system', idPrefix: 'COMPOSITE_CELIAC_TRUNK' },
+      { key: 'brachial_plexus', baseName: 'brachial plexus', idPrefix: 'COMPOSITE_BRACHIAL_PLEXUS' },
+      { key: 'coronary_circulation', baseName: 'coronary arterial system', idPrefix: 'COMPOSITE_CORONARY' },
+      { key: 'portal_triad', baseName: 'portal triad', idPrefix: 'COMPOSITE_PORTAL_TRIAD' },
+      { key: 'hepatic_segments', baseName: 'hepatic vascular structures', idPrefix: 'COMPOSITE_HEPATIC_SEGMENTS' },
+      { key: 'cranial_nerves', baseName: 'cranial nerves', idPrefix: 'COMPOSITE_CRANIAL_NERVES' },
+      { key: 'extraocular_muscles', baseName: 'extraocular muscles', idPrefix: 'COMPOSITE_EXTRAOCULAR' },
+      { key: 'pelvic_floor', baseName: 'pelvic floor', idPrefix: 'COMPOSITE_PELVIC_FLOOR' },
+      { key: 'intrinsic_hand_muscles', baseName: 'intrinsic hand muscles', idPrefix: 'COMPOSITE_INTRINSIC_HAND' },
+      { key: 'superficial_flexors_forearm', baseName: 'superficial flexors of forearm', idPrefix: 'COMPOSITE_FOREARM_FLEXORS' },
+    ];
 
   const results: Concept[] = [];
 
@@ -133,7 +324,7 @@ export function buildCompositeConcepts(atlas: Atlas): Concept[] {
     const lElems = dedupe(groups[cfg.key]?.left ?? []);
     const allElems = dedupe([...rElems, ...lElems]);
 
-    // 전체 양측 (Whole muscle)
+    // 전체 양측 (Whole structure / bilateral)
     if (allElems.length > 0) {
       results.push({
         id: cfg.idPrefix,
@@ -142,8 +333,8 @@ export function buildCompositeConcepts(atlas: Atlas): Concept[] {
       });
     }
 
-    // 우측 (Right muscle)
-    if (rElems.length > 0) {
+    // 우측 (Right)
+    if (rElems.length > 0 && rElems.length !== allElems.length) {
       results.push({
         id: `${cfg.idPrefix}_R`,
         name: `right ${cfg.baseName}`,
@@ -151,8 +342,8 @@ export function buildCompositeConcepts(atlas: Atlas): Concept[] {
       });
     }
 
-    // 좌측 (Left muscle)
-    if (lElems.length > 0) {
+    // 좌측 (Left)
+    if (lElems.length > 0 && lElems.length !== allElems.length) {
       results.push({
         id: `${cfg.idPrefix}_L`,
         name: `left ${cfg.baseName}`,
@@ -163,3 +354,4 @@ export function buildCompositeConcepts(atlas: Atlas): Concept[] {
 
   return results;
 }
+
