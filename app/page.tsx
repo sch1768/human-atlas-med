@@ -39,6 +39,9 @@ export default function Home(){
  const [selectedSubregion,setSelectedSubregion]=useState<SubregionId|null>(null);
  const [selectedSpace,setSelectedSpace]=useState<ClinicalSpace|null>(null);
  const [spaceFilter,setSpaceFilter]=useState<'all'|'boundaries'|'contents'>('all');
+ const [spaceSearch,setSpaceSearch]=useState('');
+ const [collapsedRegions,setCollapsedRegions]=useState<Record<string,boolean>>({});
+ const [summaryExpanded,setSummaryExpanded]=useState(true);
  useEffect(()=>{const abort=new AbortController();setProgress(0);setError('');setAtlas(null);setChosen(null);setDetails(false);setState({...initial,visible:DEFAULT_VISIBLE});fetch('/models/atlas.json',{signal:abort.signal}).then(r=>{if(!r.ok)throw new Error('The anatomy catalogue could not be loaded.');return r.json();}).then(data=>setAtlas(data as Atlas)).catch(e=>{if(e.name!=='AbortError')setError(e.message);});return()=>abort.abort();},[]);
  const hideSelected=()=>{if(state.selected.length===0)return;const newlyHidden=state.selected;setState(s=>({...s,hidden:[...(s.hidden??[]),...newlyHidden],selected:[],isolate:false}));setDetails(false);};
  const undoHide=()=>{if(!state.hidden||state.hidden.length===0)return;setState(s=>{const next=[...(s.hidden??[])],restored=next.pop();return{...s,hidden:next,...(restored?{selected:[restored]}:{})};});};
@@ -138,9 +141,17 @@ export default function Home(){
   setSpaceFilter(filter);
   const partIds=getSpacePartIds(atlas,space.id,filter);
   const partIdSet=new Set(partIds);
+
+  const targetSystems = new Set(state.visible);
+  for (const pid of partIds) {
+   const p = parts.get(pid);
+   if (p && p.system) targetSystems.add(p.system);
+  }
+
   const newlyHidden=atlas.parts.filter(p=>!partIdSet.has(p.id)).map(p=>p.id);
   setState(s=>({
    ...s,
+   visible:Array.from(targetSystems),
    hidden:newlyHidden,
    selected:[],
    focusTargetIds:partIds.length>0?partIds:undefined,
@@ -154,6 +165,48 @@ export default function Home(){
  const handleSpaceFilterChange=(filter:'all'|'boundaries'|'contents')=>{
   if(!selectedSpace||!atlas)return;
   handleSelectSpace(selectedSpace,filter);
+ };
+
+ const getKeywordMatchingParts=(keywords:string[])=>{
+  if(!atlas||keywords.length===0)return [];
+  const cleanKws=keywords.map(k=>k.toLowerCase().trim()).filter(Boolean);
+  const matched:string[]=[];
+  for(const part of atlas.parts){
+   const pName=part.name.toLowerCase();
+   if(cleanKws.some(kw=>pName.includes(kw))){
+    matched.push(part.id);
+   }
+  }
+  return matched;
+ };
+
+ const handleSelectKeywords=(keywords:string[],label?:string)=>{
+  if(!atlas||keywords.length===0)return;
+  const partIds=getKeywordMatchingParts(keywords);
+  if(partIds.length===0)return;
+
+  const targetSystems=new Set(state.visible);
+  for(const pid of partIds){
+   const p=parts.get(pid);
+   if(p && p.system)targetSystems.add(p.system);
+  }
+
+  const firstPart=parts.get(partIds[0]);
+  setChosen({
+   id:label??(firstPart?firstPart.name:'Structure'),
+   name:label??(firstPart?firstPart.name:'Structure'),
+   elements:partIds,
+  });
+  setState(s=>({
+   ...s,
+   visible:Array.from(targetSystems),
+   selected:partIds,
+   isolate:false,
+   focusTargetIds:partIds,
+   focusNonce:(s.focusNonce??0)+1,
+  }));
+  setDetails(true);
+  setPanel(null);
  };
 
  const handleNavigateToConcept=(targetName:string)=>{
@@ -233,21 +286,59 @@ export default function Home(){
    ):(
     <div className="spaces-container">
      {!selectedSpace?(
-      <div className="spaces-list">
-       {CLINICAL_SPACES.map(space=>(
-        <button key={space.id} type="button" className="space-card" onClick={()=>handleSelectSpace(space,'all')}>
-         <div className="space-card-top">
-          <div className="space-card-title">
-           <span className="space-card-icon">{space.icon}</span>
-           <span>{space.name}</span>
+      <>
+       <div className="spaces-search-box">
+        <Search size={13} style={{color:'#7b8a97',flexShrink:0}}/>
+        <input
+         value={spaceSearch}
+         onChange={e=>setSpaceSearch(e.target.value)}
+         placeholder="Search spaces (carpal, fossa, triangle...)"
+         aria-label="Search clinical spaces"
+        />
+        {spaceSearch&&<Button variant="ghost" className="search-clear-btn" onClick={()=>setSpaceSearch('')}><X size={12}/></Button>}
+       </div>
+       <div className="spaces-list">
+        {REGIONS.map(reg=>{
+         const spacesInRegion=CLINICAL_SPACES.filter(s=>{
+          if(s.regionId!==reg.id)return false;
+          if(!spaceSearch.trim())return true;
+          const q=spaceSearch.toLowerCase().trim();
+          return s.name.toLowerCase().includes(q)||s.koreanName.includes(q);
+         });
+         if(spacesInRegion.length===0)return null;
+         const isCollapsed=!spaceSearch&&collapsedRegions[reg.id];
+
+         return (
+          <div key={reg.id} className="space-region-group">
+           <button
+            type="button"
+            className="space-region-header"
+            onClick={()=>setCollapsedRegions(prev=>({...prev,[reg.id]:!prev[reg.id]}))}
+           >
+            <div className="space-region-title">
+             <span>{reg.icon}</span>
+             <span>{reg.name}</span>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:'5px'}}>
+             <span className="space-region-count">{spacesInRegion.length}</span>
+             {isCollapsed?<ChevronDown size={14}/>:<ChevronUp size={14}/>}
+            </div>
+           </button>
+           {!isCollapsed&&(
+            <div className="space-region-items">
+             {spacesInRegion.map(space=>(
+              <button key={space.id} type="button" className="space-card" onClick={()=>handleSelectSpace(space,'all')}>
+               <div className="space-card-name">{space.name}</div>
+               <div className="space-card-korean">{space.koreanName}</div>
+              </button>
+             ))}
+            </div>
+           )}
           </div>
-          <span className="space-card-badge">{space.regionId.toUpperCase()}</span>
-         </div>
-         <div className="space-card-korean">{space.koreanName}</div>
-         <p className="space-card-desc">{space.summary}</p>
-        </button>
-       ))}
-      </div>
+         );
+        })}
+       </div>
+      </>
      ):(
       <div className="space-detail-view">
        <Button variant="ghost" className="space-back-btn" onClick={()=>{setSelectedSpace(null);handleResetToWholeBody();}}>
@@ -255,10 +346,16 @@ export default function Home(){
        </Button>
        <div className="space-header">
         <div className="space-header-title">
-         <span>{selectedSpace.icon}</span>
          <strong>{selectedSpace.name}</strong>
         </div>
         <span className="space-card-korean">{selectedSpace.koreanName}</span>
+       </div>
+       <div className="space-summary-box">
+        <div className="space-summary-header" onClick={()=>setSummaryExpanded(v=>!v)}>
+         <span>Summary</span>
+         <span>{summaryExpanded?'접기':'펼치기'}</span>
+        </div>
+        {summaryExpanded&&<p className="space-summary-text">{selectedSpace.summary}</p>}
        </div>
        <div className="space-filter-bar" role="group" aria-label="Space layer filter">
         <button type="button" className={`space-filter-btn ${spaceFilter==='all'?'active':''}`} onClick={()=>handleSpaceFilterChange('all')}>All</button>
@@ -266,25 +363,49 @@ export default function Home(){
         <button type="button" className={`space-filter-btn ${spaceFilter==='contents'?'active':''}`} onClick={()=>handleSpaceFilterChange('contents')}>Contents</button>
        </div>
        <div className="space-section">
-        <div className="space-section-title"><span>🛡️ Boundaries (경계)</span></div>
+        <div className="space-section-title"><span>Boundaries</span></div>
         <div className="space-item-list">
-         {selectedSpace.boundaries.map((b,i)=>(
-          <div key={i} className="space-item-row" onClick={()=>handleNavigateToConcept(b.keywords[0]||b.label)}>
-           <span className="space-item-name">{b.label}</span>
-           <span className="space-item-type">{b.type}</span>
-          </div>
-         ))}
+         {selectedSpace.boundaries.map((b,i)=>{
+          const matchIds=getKeywordMatchingParts(b.keywords);
+          const isAvailable=matchIds.length>0;
+          return (
+           <div
+            key={i}
+            className={`space-item-row ${!isAvailable?'disabled':''}`}
+            onClick={isAvailable?()=>handleSelectKeywords(b.keywords,b.label):undefined}
+            title={isAvailable?`Click to inspect all ${matchIds.length} parts in 3D`:'Structure not modeled in 3D'}
+           >
+            <span className="space-item-name">
+             {b.label}
+             {!isAvailable&&<span className="space-item-unmodeled">(Unmodeled)</span>}
+            </span>
+            <span className="space-item-type">{b.type}</span>
+           </div>
+          );
+         })}
         </div>
        </div>
        <div className="space-section">
-        <div className="space-section-title"><span>⚡ Contents (내용물)</span></div>
+        <div className="space-section-title"><span>Contents</span></div>
         <div className="space-item-list">
-         {selectedSpace.contents.map((c,i)=>(
-          <div key={i} className="space-item-row" onClick={()=>handleNavigateToConcept(c.keywords[0]||c.label)}>
-           <span className="space-item-name">{c.label}</span>
-           <span className="space-item-type">{c.category}</span>
-          </div>
-         ))}
+         {selectedSpace.contents.map((c,i)=>{
+          const matchIds=getKeywordMatchingParts(c.keywords);
+          const isAvailable=matchIds.length>0&&c.category!=='lymph';
+          return (
+           <div
+            key={i}
+            className={`space-item-row ${!isAvailable?'disabled':''}`}
+            onClick={isAvailable?()=>handleSelectKeywords(c.keywords,c.label):undefined}
+            title={isAvailable?`Click to inspect all ${matchIds.length} parts in 3D`:'Structure not modeled in 3D'}
+           >
+            <span className="space-item-name">
+             {c.label}
+             {!isAvailable&&<span className="space-item-unmodeled">(Unmodeled)</span>}
+            </span>
+            <span className="space-item-type">{c.category}</span>
+           </div>
+          );
+         })}
         </div>
        </div>
        {selectedSpace.clinicalPoints.length>0&&(
