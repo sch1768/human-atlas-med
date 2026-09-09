@@ -20,7 +20,7 @@ export interface Part {id:string;name:string;conceptId:string;system:SystemId;ch
 export interface Concept {id:string;name:string;elements:string[]}
 export interface Atlas {version:string;sex?:'male';source?:string;scope?:string;parts:Part[];concepts:Concept[];chunks:{url:string;bytes:number;gzip?:string;gzipBytes?:number}[];triangles:number}
 export type View = 'three-quarter'|'front'|'back'|'side';
-export interface SceneState {inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];isolate:boolean;view:View;rotate:boolean;reset:number}
+export interface SceneState {inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];isolate:boolean;view:View;rotate:boolean;reset:number;focusNonce?:number;ghost?:boolean;hidden?:string[]}
 export const DEFAULT_VISIBLE:SystemId[] = ['cardiac','sensory','skeletal','muscular','arterial','venous','nervous','respiratory','digestive','urinary','lymphatic','endocrine','reproductive','connective'];
 export const EXPLANATIONS:Record<string,string> = {
  'heart':'A muscular pump in the chest. Its right side sends blood to the lungs; its left side sends blood through the systemic circulation.',
@@ -32,5 +32,14 @@ export const EXPLANATIONS:Record<string,string> = {
  'urinary bladder':'A muscular reservoir in the pelvis that stores urine arriving from the kidneys through the ureters.',
  'trachea':'The main airway connecting the larynx to the bronchi. Its cartilage supports keep the airway open during breathing.',
  'diaphragm':'A broad muscle separating the chest and abdomen. When it contracts, it increases chest volume and helps draw air into the lungs.',
+ 'trapezius':'A large superficial back muscle extending from the occipital bone to the lower thoracic vertebrae and laterally to the spine of the scapula. It stabilizes and moves the scapula.',
+ 'deltoid':'The large triangular muscle covering the shoulder joint. Its anterior, lateral, and posterior fibers abduct, flex, and extend the arm.',
+ 'pectoralis major':'A thick, fan-shaped muscle covering the upper chest, responsible for flexion, adduction, and medial rotation of the arm.',
+ 'triceps brachii':'A three-headed muscle on the posterior arm, serving as the primary extensor of the elbow joint.',
+ 'biceps brachii':'A two-headed muscle on the anterior arm, acting as a powerful flexor of the elbow and supinator of the forearm.',
+ 'gastrocnemius':'A superficial two-headed calf muscle that plantarflexes the foot at the ankle and flexes the leg at the knee joint.',
+ 'quadriceps femoris':'A large four-part muscle group covering the front and sides of the thigh, acting as the primary extensor of the knee joint.',
+ 'hamstrings':'A posterior thigh muscle group (biceps femoris, semitendinosus, and semimembranosus) that flexes the knee and extends the hip.',
+ 'rotator cuff':'A group of four shoulder muscles (supraspinatus, infraspinatus, teres minor, and subscapularis) that stabilize the glenohumeral joint.',
 };
 export function explanation(name:string,system:SystemId){return EXPLANATIONS[name.toLowerCase()] ?? SYSTEMS.find(s=>s.id===system)?.description ?? '';}
