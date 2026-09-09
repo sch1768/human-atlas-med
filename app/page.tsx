@@ -14,7 +14,7 @@ import { REGIONS, getRegionPartIds, type RegionId, type SubregionId } from './re
 import { CLINICAL_SPACES, getSpacePartIds, type ClinicalSpace } from './spaces';
 import { ANATOMICAL_RELATIONSHIPS, getRelationshipsForConcept, type AnatomicalRelationship } from './relationships';
 
-const initial: SceneState = { explode: 0, visible: DEFAULT_VISIBLE, selected: [], isolate: false, view: 'three-quarter', rotate: false, reset: 0, ghost: false, hidden: [] };
+const initial: SceneState = { explode: 0, visible: DEFAULT_VISIBLE, selected: [], isolate: false, isolatedPartIds: [], view: 'three-quarter', rotate: false, reset: 0, ghost: false, hidden: [] };
 
 const FEATURED_ORGANS: { name: string; label: string; color: string }[] = [
   { name: 'heart', label: 'Heart (심장)', color: '#b96760' },
@@ -44,29 +44,57 @@ export default function Home() {
   const [summaryExpanded, setSummaryExpanded] = useState(true);
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   useEffect(() => { const abort = new AbortController(); setProgress(0); setError(''); setAtlas(null); setChosen(null); setDetails(false); setState({ ...initial, visible: DEFAULT_VISIBLE }); fetch('/models/atlas.json', { signal: abort.signal }).then(r => { if (!r.ok) throw new Error('The anatomy catalogue could not be loaded.'); return r.json(); }).then(data => setAtlas(data as Atlas)).catch(e => { if (e.name !== 'AbortError') setError(e.message); }); return () => abort.abort(); }, []);
-  const hideSelected = () => { if (state.selected.length === 0) return; const newlyHidden = state.selected; setState(s => ({ ...s, hidden: [...(s.hidden ?? []), ...newlyHidden], selected: [], isolate: false })); setDetails(false); };
+  const hideSelected = () => {
+    if (state.selected.length === 0) return;
+    const newlyHidden = state.selected;
+    setState(s => ({
+      ...s,
+      hidden: [...(s.hidden ?? []), ...newlyHidden],
+      selected: [],
+      isolate: s.isolate,
+      isolatedPartIds: s.isolate ? (s.isolatedPartIds ?? []) : []
+    }));
+    setDetails(false);
+  };
   const undoHide = () => { if (!state.hidden || state.hidden.length === 0) return; setState(s => { const next = [...(s.hidden ?? [])], restored = next.pop(); return { ...s, hidden: next, ...(restored ? { selected: [restored] } : {}) }; }); };
   const resetHidden = () => { setState(s => ({ ...s, hidden: [] })); };
+  const toggleIsolate = () => {
+    setState(s => {
+      const willIsolate = !s.isolate;
+      if (willIsolate) {
+        const partsToIsolate = s.selected.length > 0 ? s.selected : (s.isolatedPartIds ?? []);
+        return { ...s, isolate: true, isolatedPartIds: partsToIsolate, explode: 0 };
+      } else {
+        return { ...s, isolate: false, isolatedPartIds: [], explode: 0 };
+      }
+    });
+  };
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       const key = e.key.toLowerCase();
       if (e.key === '/') { e.preventDefault(); setPanel('search'); setDetails(false); }
-      else if (e.key === 'Escape') { setPanel(null); setDetails(false); setState(s => ({ ...s, selected: [], isolate: false })); }
-      else if (key === 'f' && state.selected.length > 0) { e.preventDefault(); setState(s => ({ ...s, focusNonce: (s.focusNonce ?? 0) + 1, isolate: false })); }
+      else if (e.key === 'Escape') { setPanel(null); setDetails(false); setState(s => ({ ...s, selected: [], isolate: false, isolatedPartIds: [] })); }
+      else if (key === 'f' && state.selected.length > 0) { e.preventDefault(); setState(s => ({ ...s, focusNonce: (s.focusNonce ?? 0) + 1 })); }
       else if (key === 'h' && state.selected.length > 0) { e.preventDefault(); hideSelected(); }
       else if (key === 'u' && (state.hidden?.length ?? 0) > 0) { e.preventDefault(); undoHide(); }
-      else if (key === 'g' && state.selected.length > 0) { e.preventDefault(); setState(s => ({ ...s, ghost: !s.ghost, isolate: false })); }
-      else if (key === 'i' && state.selected.length > 0) { e.preventDefault(); setState(s => ({ ...s, isolate: !s.isolate, explode: 0 })); }
+      else if (key === 'g' && state.selected.length > 0) { e.preventDefault(); setState(s => ({ ...s, ghost: !s.ghost })); }
+      else if (key === 'i' && (state.selected.length > 0 || state.isolate)) { e.preventDefault(); toggleIsolate(); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.selected, state.hidden, state.ghost, state.isolate]);
+  }, [state.selected, state.hidden, state.ghost, state.isolate, state.isolatedPartIds]);
   const parts = useMemo(() => new Map(atlas?.parts.map(p => [p.id, p])), [atlas]);
   const counts = useMemo(() => Object.fromEntries(SYSTEMS.map(s => [s.id, atlas?.parts.filter(p => p.system === s.id).length ?? 0])), [atlas]);
   const activeSystems = SYSTEMS.filter(s => counts[s.id] > 0);
   const selectedParts = state.selected.map(id => parts.get(id)).filter(p => !!p), selected = selectedParts[0], system = SYSTEMS.find(s => s.id === selected?.system);
-  const visibleCount = atlas?.parts.filter(p => state.isolate ? state.selected.includes(p.id) : state.visible.includes(p.system) || state.selected.includes(p.id)).length ?? 0;
+  const visibleCount = atlas?.parts.filter(p => {
+    if (state.isolate) {
+      const isoList = (state.isolatedPartIds && state.isolatedPartIds.length > 0) ? state.isolatedPartIds : state.selected;
+      return isoList.includes(p.id) || state.selected.includes(p.id);
+    }
+    return state.visible.includes(p.system) || state.selected.includes(p.id);
+  }).length ?? 0;
   const compositeConcepts = useMemo(() => {
     if (!atlas) return [];
     return buildCompositeConcepts(atlas);
@@ -94,14 +122,58 @@ export default function Home() {
       return a.name.length - b.name.length;
     }).slice(0, 80);
   }, [atlas, allConcepts, query]);
-  const choose = (c: Concept) => { setChosen(c); setState(s => ({ ...s, selected: c.elements, isolate: false, rotate: false, focusNonce: (s.focusNonce ?? 0) + 1 })); setDetails(true); setPanel(null); };
+  const choose = (c: Concept) => {
+    setChosen(c);
+    setState(s => {
+      const isAlreadyIsolated = s.isolate && (s.isolatedPartIds?.length ?? 0) > 0;
+      const hasOverlap = isAlreadyIsolated && c.elements.some(elemId => s.isolatedPartIds!.includes(elemId));
+      return {
+        ...s,
+        selected: c.elements,
+        isolate: hasOverlap,
+        isolatedPartIds: hasOverlap ? s.isolatedPartIds : [],
+        rotate: false,
+        focusNonce: (s.focusNonce ?? 0) + 1
+      };
+    });
+    setDetails(true);
+    setPanel(null);
+  };
   const chooseFeatured = (organName: string) => {
     if (!atlas) return;
     const c = allConcepts.find(x => x.name.toLowerCase() === organName);
-    if (c) choose(c);
+    if (c) {
+      setChosen(c);
+      setState(s => ({ ...s, selected: c.elements, isolate: false, isolatedPartIds: [], rotate: false, focusNonce: (s.focusNonce ?? 0) + 1 }));
+      setDetails(true);
+      setPanel(null);
+    }
   };
   useEffect(() => { if (!atlas) return; return registerAtlasTools(atlas, c => flushSync(() => choose(c))); }, [atlas]);
-  const choosePart = (id: string, isDouble = false) => { const p = parts.get(id); if (!p) return; setChosen({ id: p.conceptId, name: p.name, elements: [id] }); setState(s => ({ ...s, selected: [id], isolate: false, rotate: false, ...(isDouble ? { focusNonce: (s.focusNonce ?? 0) + 1 } : {}) })); setDetails(true); setPanel(null); };
+  const choosePart = (id: string | null, isDouble = false) => {
+    if (!id) {
+      setChosen(null);
+      setDetails(false);
+      setState(s => ({ ...s, selected: [], ghost: false }));
+      return;
+    }
+    const p = parts.get(id);
+    if (!p) return;
+    setChosen({ id: p.conceptId, name: p.name, elements: [id] });
+    setState(s => {
+      const keepIsolate = s.isolate && (s.isolatedPartIds?.length ?? 0) > 0;
+      return {
+        ...s,
+        selected: [id],
+        isolate: keepIsolate,
+        isolatedPartIds: keepIsolate ? s.isolatedPartIds : [],
+        rotate: false,
+        focusNonce: (s.focusNonce ?? 0) + 1
+      };
+    });
+    setDetails(true);
+    setPanel(null);
+  };
   const toggle = (id: SystemId) => { setDetails(false); setState(s => ({ ...s, selected: [], isolate: false, visible: s.visible.includes(id) ? s.visible.filter(x => x !== id) : [...s.visible, id] })); };
   const reset = () => { setSelectedRegion(null); setSelectedSubregion(null); setSelectedSpace(null); setState(s => ({ ...initial, visible: DEFAULT_VISIBLE, reset: s.reset + 1, hidden: [], focusTargetIds: undefined })); setChosen(null); setDetails(false); setPanel(null); };
   const toggleLeftPanel = () => { setLeftPanelOpen(v => !v); setPanel(p => p === 'layers' ? null : 'layers'); };
@@ -503,11 +575,11 @@ export default function Home() {
       )}
     </section>}
     <nav className={`view-controls glass ${(details && selectedParts.length > 0) || panel === 'search' ? 'shifted' : ''}`} aria-label="Camera controls">{(['three-quarter', 'front', 'side', 'back'] as View[]).map((v, i) => <Button variant="ghost" key={v} className={state.view === v ? 'active' : ''} aria-pressed={state.view === v} onClick={() => setState(s => ({ ...s, view: v, reset: s.reset + 1, rotate: false }))} title={`${v} view`} aria-label={`${v} view`}><span>{['¾', 'F', 'S', 'B'][i]}</span></Button>)}<i /><Button variant="ghost" aria-label={state.rotate ? 'Pause rotation' : 'Rotate body'} title="Auto rotate" className={state.rotate ? 'active' : ''} onClick={() => setState(s => ({ ...s, rotate: !state.rotate }))}>{state.rotate ? <Pause size={17} /> : <RotateCw size={18} />}</Button><Button variant="ghost" aria-label="Reset view and layers" title="Reset" onClick={reset}><RotateCcw size={17} /></Button></nav>
-    {((!details && state.selected.length > 0) || (state.hidden?.length ?? 0) > 0) && <div className="floating-dock glass" role="toolbar" aria-label="Dissection tools">{!details && state.selected.length > 0 && <><Button variant="ghost" onClick={() => setState(s => ({ ...s, focusNonce: (s.focusNonce ?? 0) + 1, isolate: false }))} title="Focus on structure (F)"><Focus size={15} /><span>Focus</span><kbd>F</kbd></Button><Button variant="ghost" onClick={hideSelected} title="Hide structure (H)"><EyeOff size={15} /><span>Hide</span><kbd>H</kbd></Button><Button variant="ghost" className={state.ghost ? 'active' : ''} onClick={() => setState(s => ({ ...s, ghost: !state.ghost, isolate: false }))} title="Toggle Ghost mode (G)"><Layers3 size={15} /><span>Ghost Mode{state.ghost ? ' · ON' : ''}</span><kbd>G</kbd></Button><Button variant="ghost" className={state.isolate ? 'active' : ''} onClick={() => setState(s => ({ ...s, isolate: !state.isolate, explode: 0 }))} title="Isolate structure (I)"><span>{state.isolate ? 'Show all' : 'Isolate'}</span><kbd>I</kbd></Button></>}{(state.hidden?.length ?? 0) > 0 && <>{!details && state.selected.length > 0 && <i className="dock-sep" />}<Button variant="ghost" onClick={undoHide} title="Undo hide (U)"><Undo2 size={15} /><span>Undo ({state.hidden!.length})</span><kbd>U</kbd></Button><Button variant="ghost" onClick={resetHidden} title="Unhide all structures"><span>Unhide all</span></Button></>}</div>}
+    {((!details && state.selected.length > 0) || (state.hidden?.length ?? 0) > 0) && <div className="floating-dock glass" role="toolbar" aria-label="Dissection tools">{!details && state.selected.length > 0 && <><Button variant="ghost" onClick={() => setState(s => ({ ...s, focusNonce: (s.focusNonce ?? 0) + 1 }))} title="Focus on structure (F)"><Focus size={15} /><span>Focus</span><kbd>F</kbd></Button><Button variant="ghost" onClick={hideSelected} title="Hide structure (H)"><EyeOff size={15} /><span>Hide</span><kbd>H</kbd></Button><Button variant="ghost" className={state.ghost ? 'active' : ''} onClick={() => setState(s => ({ ...s, ghost: !state.ghost }))} title="Toggle Ghost mode (G)"><Layers3 size={15} /><span>Ghost Mode{state.ghost ? ' · ON' : ''}</span><kbd>G</kbd></Button><Button variant="ghost" className={state.isolate ? 'active' : ''} onClick={toggleIsolate} title="Isolate structure (I)"><span>{state.isolate ? 'Show all' : 'Isolate'}</span><kbd>I</kbd></Button></>}{(state.hidden?.length ?? 0) > 0 && <>{!details && state.selected.length > 0 && <i className="dock-sep" />}<Button variant="ghost" onClick={undoHide} title="Undo hide (U)"><Undo2 size={15} /><span>Undo ({state.hidden!.length})</span><kbd>U</kbd></Button><Button variant="ghost" onClick={resetHidden} title="Unhide all structures"><span>Unhide all</span></Button></>}</div>}
     <footer className="studio-footer"><span>Drag to orbit · Pinch to zoom · Tap to inspect · Double-tap to focus</span></footer>
     {progress < 100 && !error && <div className="loading glass" role="status"><Activity size={18} /><div><strong>Preparing the anatomy</strong><span>{progress}% · Loading {atlas?.parts.length.toLocaleString() ?? '2,234'} pieces</span><div className="loading-track"><i style={{ width: `${progress}%` }} /></div></div></div>}
     {error && <div className="loading glass error" role="alert"><p>{error}</p><Button variant="ghost" onClick={() => location.reload()}>Reload viewer</Button></div>}
-    <Sheet open={details && selectedParts.length > 0} modal={false} disablePointerDismissal onOpenChange={setDetails}><SheetContent initialFocus={detailTitle} className={`detail-sheet glass ${state.isolate ? 'is-isolated' : ''}`} showCloseButton={true}><div className="detail-header"><div className="detail-accent" style={{ background: system?.color }} /><div className="eyebrow">{system?.name ?? 'ANATOMY'}</div><SheetTitle ref={detailTitle} tabIndex={-1} className="structure-title">{chosen ? getDisplayName(chosen.name) : ''}</SheetTitle>{chosen && getHanjaName(chosen.name) && <div className="structure-tags"><Badge variant="outline" className="hanja-badge">구용어: {getHanjaName(chosen.name)}</Badge></div>}<SheetDescription className="sr-only">Structure inspector</SheetDescription></div><div className="detail-actions"><Button className="primary-action" onClick={() => setState(s => ({ ...s, focusNonce: (s.focusNonce ?? 0) + 1, isolate: false }))}><Focus size={17} /><span>Focus</span><kbd className="detail-kbd">F</kbd></Button><Button variant="outline" className={`secondary-action ${state.ghost ? 'active' : ''}`} onClick={() => setState(s => ({ ...s, ghost: !state.ghost, isolate: false }))} title="주변 구조물 반투명화 및 선택 부위 황금빛 강조 (단축키 G)"><Layers3 size={15} /><span>Ghost Mode{state.ghost ? ' · ON' : ''}</span><kbd className="detail-kbd">G</kbd></Button><Button variant="outline" className="secondary-action" onClick={hideSelected}><EyeOff size={15} /><span>Hide structure</span><kbd className="detail-kbd">H</kbd></Button><Button variant="outline" className={`secondary-action ${state.isolate ? 'active' : ''}`} onClick={() => setState(s => ({ ...s, isolate: !state.isolate, explode: 0 }))}><span>{state.isolate ? 'Show all' : 'Isolate'}</span><kbd className="detail-kbd">I</kbd></Button><Button variant="ghost" className="secondary-action clear-action" onClick={() => { setState(s => ({ ...s, selected: [], isolate: false, ghost: false })); setDetails(false); }}><span>Clear selection</span><kbd className="detail-kbd">Esc</kbd></Button></div>{chosen && (() => { const rels = getRelationshipsForConcept(chosen.name); if (rels.length === 0) return null; return (<div className="inspector-relationships"><div className="relationships-title">Anatomical Relationships ({rels.length})</div>{rels.map(rel => { const isSource = chosen.name.toLowerCase().includes(rel.sourceConcept); const peerName = isSource ? rel.targetLabel : rel.sourceLabel; const peerConcept = isSource ? rel.targetConcept : rel.sourceConcept; return (<button key={rel.id} type="button" className="relationship-chip" onClick={() => handleNavigateToConcept(peerConcept)} title={rel.clinicalNote ?? rel.relationshipLabel}><span className="rel-tag">{rel.relationshipLabel}</span><span className="rel-name">{peerName}</span></button>); })}</div>); })()}</SheetContent></Sheet>
+    <Sheet open={details && selectedParts.length > 0} modal={false} disablePointerDismissal onOpenChange={setDetails}><SheetContent initialFocus={detailTitle} className={`detail-sheet glass ${state.isolate ? 'is-isolated' : ''}`} showCloseButton={true}><div className="detail-header"><div className="detail-accent" style={{ background: system?.color }} /><div className="eyebrow">{system?.name ?? 'ANATOMY'}</div><SheetTitle ref={detailTitle} tabIndex={-1} className="structure-title">{chosen ? getDisplayName(chosen.name) : ''}</SheetTitle>{chosen && getHanjaName(chosen.name) && <div className="structure-tags"><Badge variant="outline" className="hanja-badge">구용어: {getHanjaName(chosen.name)}</Badge></div>}<SheetDescription className="sr-only">Structure inspector</SheetDescription></div><div className="detail-actions"><Button className="primary-action" onClick={() => setState(s => ({ ...s, focusNonce: (s.focusNonce ?? 0) + 1 }))}><Focus size={17} /><span>Focus</span><kbd className="detail-kbd">F</kbd></Button><Button variant="outline" className={`secondary-action ${state.ghost ? 'active' : ''}`} onClick={() => setState(s => ({ ...s, ghost: !state.ghost }))} title="주변 구조물 반투명화 및 선택 부위 황금빛 강조 (단축키 G)"><Layers3 size={15} /><span>Ghost Mode{state.ghost ? ' · ON' : ''}</span><kbd className="detail-kbd">G</kbd></Button><Button variant="outline" className="secondary-action" onClick={hideSelected}><EyeOff size={15} /><span>Hide structure</span><kbd className="detail-kbd">H</kbd></Button><Button variant="outline" className={`secondary-action ${state.isolate ? 'active' : ''}`} onClick={toggleIsolate}><span>{state.isolate ? 'Show all' : 'Isolate'}</span><kbd className="detail-kbd">I</kbd></Button><Button variant="ghost" className="secondary-action clear-action" onClick={() => { setState(s => ({ ...s, selected: [], isolate: false, isolatedPartIds: [], ghost: false })); setDetails(false); }}><span>Clear selection</span><kbd className="detail-kbd">Esc</kbd></Button></div>{chosen && (() => { const rels = getRelationshipsForConcept(chosen.name); if (rels.length === 0) return null; return (<div className="inspector-relationships"><div className="relationships-title">Anatomical Relationships ({rels.length})</div>{rels.map(rel => { const isSource = chosen.name.toLowerCase().includes(rel.sourceConcept); const peerName = isSource ? rel.targetLabel : rel.sourceLabel; const peerConcept = isSource ? rel.targetConcept : rel.sourceConcept; return (<button key={rel.id} type="button" className="relationship-chip" onClick={() => handleNavigateToConcept(peerConcept)} title={rel.clinicalNote ?? rel.relationshipLabel}><span className="rel-tag">{rel.relationshipLabel}</span><span className="rel-name">{peerName}</span></button>); })}</div>); })()}</SheetContent></Sheet>
     <Sheet open={about} onOpenChange={setAbout}><SheetContent className="about-sheet glass"><div className="eyebrow">USER GUIDE & REFERENCE</div><SheetTitle className="structure-title">3D 인체 해부학 가이드</SheetTitle><SheetDescription>골학·실습·KMLE(의사국가고시) 대비 고해상도 3D 인터랙티브 아틀라스</SheetDescription><div className="about-copy"><h3>🧭 3대 탐색 모드</h3><p>• <b>Systems (계통)</b>: 골격, 근육, 순환, 신경, 장기 등 8대 계통별 표시/숨김<br />• <b>Regions (부위)</b>: 7대 대분류 및 30개 세부 분과(Subregions) 원클릭 격리<br />• <b>Spaces (공간)</b>: 28개 임상 국소 공간(수근관, 서혜관, 종격 등) 경계(Boundaries) 및 내용물(Contents) 자동 포커싱 & 복합 구조물 동시 선택</p><h3>⚡ 핵심 조작 & 단축키</h3><p>• <b>기본 조작</b>: 드래그(360° 회전), 휠/핀치(줌), 더블클릭(포커스 이동)<br />• <b><code>F</code> (Focus)</b>: 선택 구조물 중심으로 정밀 줌인<br />• <b><code>H</code> (Hide) / <code>U</code> (Undo)</b>: 구조물 숨기기 / 되돌리기<br />• <b><code>G</code> (Ghost)</b>: 주변을 반투명화하고 선택 구조물을 황금빛 네온(Golden Glow)으로 투과 강조 (담도, 뇌신경, 심부 혈관 관찰 최적화)<br />• <b><code>I</code> (Isolate)</b>: 선택 부위만 단독 관찰<br />• <b><code>/</code> (Search)</b>: 한글(신·구용어) 및 영문 통합 검색<br />• <b><code>Esc</code></b>: 선택 해제 및 패널 닫기</p><h3>📱 iPad 전체화면 앱 (PWA)</h3><p>Safari 브라우저에서 <b>공유 버튼</b> ➔ <b>[홈 화면에 추가]</b>를 누르면 주소창 없는 120Hz ProMotion 전체화면 단독 앱으로 사용할 수 있습니다.</p><h3>📚 데이터셋 출처 (Attribution)</h3><p><b>BodyParts3D 4.0</b> (2,234개 3D 메쉬 및 3,432개 개념 인덱싱)<br />© The Database Center for Life Science (DBCLS), NBDC 라이선스 (CC BY 4.0).</p><a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html" target="_blank" rel="noreferrer">데이터셋 라이선스 정책 <ArrowUpRight size={14} /></a><a href="https://academic.oup.com/nar/article/37/suppl_1/D782/1000752" target="_blank" rel="noreferrer">공식 학술 논문 <ArrowUpRight size={14} /></a><h3>⚠️ 데이터셋 한계 및 미지원 안내</h3><p>BodyParts3D 공식 기준, 아직 데이터에 표현되지 않았거나 제작 중인 파트가 있어 다음 항목은 3D 표현 및 기능이 제한될 수 있습니다.<br />• <b>말초신경</b>: 일부 말초신경은 3D 분리/마스킹이 제한됩니다.<br />• <b>안면동맥 및 일부 세부 혈관</b>: 세부 혈관 분할(Segmentation)이 불완전할 수 있습니다.<br />• <b>작은 혈관·신경 가지</b>: 미세한 구조는 검색 또는 개별 선택이 제한될 수 있습니다.<br />• <b>세부 해부학적 구조</b>: BodyParts3D에 개별 mesh가 없는 경우 3D 모델이 제공되지 않습니다.<br />• ℹ️ <b>Compound(복합) 개념</b>: 일부 해부학 개념은 여러 3D 요소를 조합하여 표현합니다.<br />• ℹ️ <b>초미세 구조</b>: 독립 mesh가 있더라도 화면 배율에 따라 식별이 어려울 수 있습니다.</p></div></SheetContent></Sheet>
   </main>;
 }
