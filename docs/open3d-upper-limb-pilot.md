@@ -48,8 +48,12 @@ relationship concepts to geometry:
 - ulnar nerve
 - radial nerve
 
-Digital and named cutaneous branches remain in the source audit, but should be
-added only after the six primary concepts pass registration and interaction QA.
+Following route review, the pilot now also includes the radial deep,
+posterior-interosseous, superficial, cutaneous, and dorsal digital branches;
+the musculocutaneous continuation as the lateral cutaneous nerve of the
+forearm; the recurrent branch of the median nerve; and the palmar, dorsal,
+deep, communicating, and digital branches of the ulnar nerve. Each branch is
+searchable independently and remains included when its parent nerve is selected.
 
 ## Registration and axillary-nerve correction
 
@@ -75,6 +79,28 @@ expert anatomical validation.
 - https://www.ncbi.nlm.nih.gov/books/NBK493212/
 - https://pubmed.ncbi.nlm.nih.gov/9381311/
 
+The radial-nerve trunk already travels posteriorly and laterally around the
+humeral shaft in the source coordinates. Its course looked incomplete because
+the distal deep branch, posterior interosseous nerve, and superficial branch
+were not imported. Those objects now continue the route around the radial neck,
+through the supinator, and toward the dorsolateral hand.
+
+The ulnar-nerve trunk passed behind the medial epicondyle but remained in the
+posterior forearm for too long. A feathered path correction now moves the
+segment immediately distal to the cubital tunnel anteriorly by up to 32 mm,
+then returns to the source path toward the wrist. The imported palmar and deep
+branches complete the route through the Guyon-canal region.
+
+The median-nerve trunk was retained without deformation. Its recurrent branch
+is now imported as a separate searchable structure. The musculocutaneous nerve
+is extended distally with the source object representing the lateral cutaneous
+nerve of the forearm.
+
+- https://www.ncbi.nlm.nih.gov/books/NBK534840/
+- https://www.ncbi.nlm.nih.gov/books/NBK431063/
+- https://www.ncbi.nlm.nih.gov/books/NBK526051/
+- https://www.ncbi.nlm.nih.gov/sites/books/NBK534199/
+
 ## Acceptance gates
 
 1. Compare Open3DModel and BodyParts3D clavicle, scapula, and humerus landmarks.
@@ -85,4 +111,5 @@ expert anatomical validation.
 5. Load the pilot pack by default on `codex/newdatabase`, retaining
    `?pilot=off` as a comparison escape hatch.
 6. Verify search, selection, isolate, ghost, regional anatomy, and clinical-space
-   behavior for all six concepts on desktop and mobile.
+   behavior for all parent nerves and separately searchable branch concepts on
+   desktop and mobile.

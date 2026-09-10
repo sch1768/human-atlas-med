@@ -21,7 +21,20 @@
         "yRange": [1.295, 1.412],
         "yFeather": 0.012,
         "lateralXRange": [-0.205, -0.175]
-      }
+      },
+      "maxDisplacement": 0.025
+    },
+    "Ulnar_nerve.r": {
+      "pathOffsets": [
+        { "y": 0.83, "offset": [0, 0, 0] },
+        { "y": 0.90, "offset": [0, 0, 0.008] },
+        { "y": 1.00, "offset": [0, 0, 0.026] },
+        { "y": 1.06, "offset": [0, 0, 0.032] },
+        { "y": 1.10, "offset": [0, 0, 0.014] },
+        { "y": 1.13, "offset": [0, 0, 0] },
+        { "y": 1.37, "offset": [0, 0, 0] }
+      ],
+      "maxDisplacement": 0.033
     }
   },
   "registration": {
@@ -43,13 +56,37 @@
         "https://www.ncbi.nlm.nih.gov/books/NBK493212/",
         "https://pubmed.ncbi.nlm.nih.gov/9381311/"
       ]
+    },
+    {
+      "structure": "ulnar nerve",
+      "method": "Feathered anterior path offsets immediately distal to the cubital tunnel",
+      "reason": "Move the proximal forearm segment between the flexor carpi ulnaris heads and onto the anterior surface of flexor digitorum profundus while preserving the retro-epicondylar segment",
+      "references": [
+        "https://www.ncbi.nlm.nih.gov/books/NBK431063/",
+        "https://www.ncbi.nlm.nih.gov/books/NBK526051/"
+      ]
     }
   ],
   "objects": [
     { "sourceObject": "Ulnar_nerve.r", "slug": "ulnar-nerve", "name": "Ulnar nerve", "concept": "ulnar-nerve" },
+    { "sourceObject": "Ulnar_nerve_Superficial_br_Common_palmar_digital_n", "slug": "ulnar-nerve-superficial-common-palmar-digital", "name": "Superficial and common palmar digital branches of ulnar nerve", "concept": "ulnar-superficial-common-palmar-digital", "parents": ["ulnar-nerve"] },
+    { "sourceObject": "Ulnar_nerve_Superficial_br_Proper_palmar_digital_nn", "slug": "ulnar-nerve-superficial-proper-palmar-digital", "name": "Proper palmar digital branches of ulnar nerve", "concept": "ulnar-superficial-proper-palmar-digital", "parents": ["ulnar-nerve"] },
+    { "sourceObject": "Ulnar_nerve_Palmar_cutaneous_br", "slug": "ulnar-nerve-palmar-cutaneous", "name": "Palmar cutaneous branch of ulnar nerve", "concept": "ulnar-palmar-cutaneous-branch", "parents": ["ulnar-nerve"] },
+    { "sourceObject": "Ulnar_nerve_Dorsal_cutaneous_br", "slug": "ulnar-nerve-dorsal-cutaneous", "name": "Dorsal cutaneous branch of ulnar nerve", "concept": "ulnar-dorsal-cutaneous-branch", "parents": ["ulnar-nerve"] },
+    { "sourceObject": "Ulnar_nerve_Deep_br", "slug": "ulnar-nerve-deep-branch", "name": "Deep branch of ulnar nerve", "concept": "ulnar-deep-branch", "parents": ["ulnar-nerve"] },
+    { "sourceObject": "Ulnar_nerve_Communicating_br", "slug": "ulnar-nerve-communicating-branch", "name": "Communicating branch of ulnar nerve", "concept": "ulnar-communicating-branch", "parents": ["ulnar-nerve"] },
     { "sourceObject": "Radial_nerve.r", "slug": "radial-nerve", "name": "Radial nerve", "concept": "radial-nerve" },
+    { "sourceObject": "Radial_nerve_(posterior_brachial_cutaneous_n).r", "slug": "radial-nerve-posterior-brachial-cutaneous", "name": "Posterior cutaneous nerve of arm", "concept": "radial-posterior-cutaneous-arm", "parents": ["radial-nerve"] },
+    { "sourceObject": "Radial_nerve_(inferior_lateral_brachial_cutaneous_n).r", "slug": "radial-nerve-inferior-lateral-brachial-cutaneous", "name": "Inferior lateral cutaneous nerve of arm", "concept": "radial-inferior-lateral-cutaneous-arm", "parents": ["radial-nerve"] },
+    { "sourceObject": "Radial_nerve_(posterior_antebrachial_cutaneous_n).r", "slug": "radial-nerve-posterior-antebrachial-cutaneous", "name": "Posterior cutaneous nerve of forearm", "concept": "radial-posterior-cutaneous-forearm", "parents": ["radial-nerve"] },
+    { "sourceObject": "Radial_nerve_(deep_branch).r", "slug": "radial-nerve-deep-branch", "name": "Deep branch of radial nerve", "concept": "radial-deep-branch", "parents": ["radial-nerve"] },
+    { "sourceObject": "Radial_nerve_(posterior_interosseus_n).r", "slug": "radial-nerve-posterior-interosseous", "name": "Posterior interosseous nerve", "concept": "posterior-interosseous-nerve", "parents": ["radial-nerve"] },
+    { "sourceObject": "Radial_nerve_(superficial_br).r", "slug": "radial-nerve-superficial-branch", "name": "Superficial branch of radial nerve", "concept": "radial-superficial-branch", "parents": ["radial-nerve"] },
+    { "sourceObject": "Radial_nerve_(dorsal_digital_nn).r", "slug": "radial-nerve-dorsal-digital", "name": "Dorsal digital branches of radial nerve", "concept": "radial-dorsal-digital-branches", "parents": ["radial-nerve"] },
     { "sourceObject": "Musculocutaneus_nerve.r", "slug": "musculocutaneous-nerve", "name": "Musculocutaneous nerve", "concept": "musculocutaneous-nerve" },
+    { "sourceObject": "Musculocutaneus_nerve__-_lateral_antebrachial_cutaneous_nerve.r", "slug": "musculocutaneous-lateral-antebrachial-cutaneous", "name": "Lateral cutaneous nerve of forearm", "concept": "lateral-cutaneous-nerve-forearm", "parents": ["musculocutaneous-nerve"] },
     { "sourceObject": "Median_nerve.r", "slug": "median-nerve", "name": "Median nerve", "concept": "median-nerve" },
+    { "sourceObject": "Median_nerve_Recurrent_br", "slug": "median-nerve-recurrent-branch", "name": "Recurrent branch of median nerve", "concept": "median-recurrent-branch", "parents": ["median-nerve"] },
     { "sourceObject": "Axillary_nerve_-_superior_lateral_br_cutaneous_nerve.r", "slug": "axillary-nerve", "name": "Axillary nerve", "concept": "axillary-nerve" },
     { "sourceObject": "C5_root.r", "slug": "brachial-plexus-c5-root", "name": "C5 root of brachial plexus", "concept": "brachial-plexus" },
     { "sourceObject": "C6_root.r", "slug": "brachial-plexus-c6-root", "name": "C6 root of brachial plexus", "concept": "brachial-plexus" },
@@ -71,6 +108,21 @@
     { "slug": "musculocutaneous-nerve", "name": "Musculocutaneous nerve" },
     { "slug": "median-nerve", "name": "Median nerve" },
     { "slug": "ulnar-nerve", "name": "Ulnar nerve" },
-    { "slug": "radial-nerve", "name": "Radial nerve" }
+    { "slug": "radial-nerve", "name": "Radial nerve" },
+    { "slug": "radial-posterior-cutaneous-arm", "name": "Posterior cutaneous nerve of arm" },
+    { "slug": "radial-inferior-lateral-cutaneous-arm", "name": "Inferior lateral cutaneous nerve of arm" },
+    { "slug": "radial-posterior-cutaneous-forearm", "name": "Posterior cutaneous nerve of forearm" },
+    { "slug": "radial-deep-branch", "name": "Deep branch of radial nerve" },
+    { "slug": "posterior-interosseous-nerve", "name": "Posterior interosseous nerve" },
+    { "slug": "radial-superficial-branch", "name": "Superficial branch of radial nerve" },
+    { "slug": "radial-dorsal-digital-branches", "name": "Dorsal digital branches of radial nerve" },
+    { "slug": "lateral-cutaneous-nerve-forearm", "name": "Lateral cutaneous nerve of forearm" },
+    { "slug": "median-recurrent-branch", "name": "Recurrent branch of median nerve" },
+    { "slug": "ulnar-superficial-common-palmar-digital", "name": "Superficial and common palmar digital branches of ulnar nerve" },
+    { "slug": "ulnar-superficial-proper-palmar-digital", "name": "Proper palmar digital branches of ulnar nerve" },
+    { "slug": "ulnar-palmar-cutaneous-branch", "name": "Palmar cutaneous branch of ulnar nerve" },
+    { "slug": "ulnar-dorsal-cutaneous-branch", "name": "Dorsal cutaneous branch of ulnar nerve" },
+    { "slug": "ulnar-deep-branch", "name": "Deep branch of ulnar nerve" },
+    { "slug": "ulnar-communicating-branch", "name": "Communicating branch of ulnar nerve" }
   ]
 }

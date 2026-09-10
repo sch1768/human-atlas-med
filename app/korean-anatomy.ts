@@ -1,6 +1,7 @@
 export interface KoreanTerm {
   koreanName: string; // 신용어 (순우리말 표준)
   hanjaName: string;  // 구용어 (한자어)
+  aliases?: string[]; // 임상 약칭 및 자주 쓰는 영문·한글 동의어
 }
 
 export const KOREAN_ANATOMY_TERMS: Record<string, KoreanTerm> = {
@@ -242,6 +243,11 @@ export const KOREAN_ANATOMY_TERMS: Record<string, KoreanTerm> = {
   'medial malleolus': { koreanName: '안쪽복사', hanjaName: '내과' },
   'medial pterygoid': { koreanName: '안쪽날개근', hanjaName: '내측익돌근' },
   'median nerve': { koreanName: '정중신경', hanjaName: '정중신경' },
+  'recurrent branch of median nerve': {
+    koreanName: '정중신경되돌이가지',
+    hanjaName: '정중신경 반회지',
+    aliases: ['엄지두덩되돌이가지', 'thenar recurrent branch', 'median recurrent branch', 'million-dollar nerve'],
+  },
   'medulla oblongata': { koreanName: '숨뇌', hanjaName: '연수' },
   'meninges': { koreanName: '뇌척수막', hanjaName: '뇌수막' },
   'mesentery': { koreanName: '창자간막', hanjaName: '장간막' },
@@ -257,6 +263,11 @@ export const KOREAN_ANATOMY_TERMS: Record<string, KoreanTerm> = {
   'mitral valve': { koreanName: '승모판', hanjaName: '승모판' },
   'mouth': { koreanName: '입', hanjaName: '구강' },
   'musculocutaneous nerve': { koreanName: '근육피부신경', hanjaName: '근피신경' },
+  'lateral cutaneous nerve of forearm': {
+    koreanName: '가쪽아래팔피부신경',
+    hanjaName: '외측전완피신경',
+    aliases: ['lateral antebrachial cutaneous nerve', 'LACN'],
+  },
   'myometrium': { koreanName: '자궁근층', hanjaName: '자궁근층' },
   'nasal bone': { koreanName: '코뼈', hanjaName: '비골(코)' },
   'nasal cavity': { koreanName: '코안', hanjaName: '비강' },
@@ -327,6 +338,17 @@ export const KOREAN_ANATOMY_TERMS: Record<string, KoreanTerm> = {
   'radial head': { koreanName: '노뼈머리', hanjaName: '요골두' },
   'radial neck': { koreanName: '노뼈목', hanjaName: '요골경' },
   'radial nerve': { koreanName: '노신경', hanjaName: '요골신경' },
+  'deep branch of radial nerve': { koreanName: '노신경깊은가지', hanjaName: '요골신경 심지' },
+  'dorsal digital branches of radial nerve': { koreanName: '노신경등쪽손가락가지', hanjaName: '요골신경 배측수지가지' },
+  'inferior lateral cutaneous nerve of arm': { koreanName: '아래가쪽팔피부신경', hanjaName: '하외측상완피신경' },
+  'posterior cutaneous nerve of arm': { koreanName: '뒤팔피부신경', hanjaName: '후상완피신경' },
+  'posterior cutaneous nerve of forearm': { koreanName: '뒤아래팔피부신경', hanjaName: '후전완피신경' },
+  'posterior interosseous nerve': {
+    koreanName: '뒤뼈사이신경',
+    hanjaName: '후골간신경',
+    aliases: ['PIN'],
+  },
+  'superficial branch of radial nerve': { koreanName: '노신경얕은가지', hanjaName: '요골신경 천지' },
   'radius': { koreanName: '노뼈', hanjaName: '요골' },
   'rectum': { koreanName: '곧창자', hanjaName: '직장' },
   'rectus abdominis': { koreanName: '배곧은근', hanjaName: '복직근' },
@@ -440,6 +462,12 @@ export const KOREAN_ANATOMY_TERMS: Record<string, KoreanTerm> = {
   'ulnar artery': { koreanName: '자동맥', hanjaName: '척골동맥' },
   'ulnar head': { koreanName: '자뼈머리', hanjaName: '척골두' },
   'ulnar nerve': { koreanName: '자신경', hanjaName: '척골신경' },
+  'communicating branch of ulnar nerve': { koreanName: '자신경교통가지', hanjaName: '척골신경 교통지' },
+  'deep branch of ulnar nerve': { koreanName: '자신경깊은가지', hanjaName: '척골신경 심지' },
+  'dorsal cutaneous branch of ulnar nerve': { koreanName: '자신경손등피부가지', hanjaName: '척골신경 배측피지' },
+  'palmar cutaneous branch of ulnar nerve': { koreanName: '자신경손바닥피부가지', hanjaName: '척골신경 장측피지' },
+  'proper palmar digital branches of ulnar nerve': { koreanName: '자신경고유바닥쪽손가락가지', hanjaName: '척골신경 고유장측수지가지' },
+  'superficial and common palmar digital branches of ulnar nerve': { koreanName: '자신경얕은가지와온바닥쪽손가락가지', hanjaName: '척골신경 천지와 총장측수지가지' },
   'upper lobe of left lung': { koreanName: '왼허파위엽', hanjaName: '좌폐상엽' },
   'upper lobe of right lung': { koreanName: '오른허파위엽', hanjaName: '우폐상엽' },
   'ureter': { koreanName: '요관', hanjaName: '요관' },
@@ -846,6 +874,7 @@ export function matchesSearchTerm(name: string, searchTerm: string): boolean {
   if (term) {
     if (term.koreanName.toLowerCase().includes(q)) return true;
     if (term.hanjaName.toLowerCase().includes(q)) return true;
+    if (term.aliases?.some(alias => alias.toLowerCase().includes(q))) return true;
   }
 
   return false;

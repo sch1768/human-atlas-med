@@ -172,6 +172,41 @@ def contract_around_humerus(point, settings):
     )
 
 
+def apply_path_offsets(point, controls):
+    controls = sorted(controls, key=lambda control: float(control["y"]))
+    if not controls:
+        return point
+    y = point[1]
+    if y <= float(controls[0]["y"]):
+        offset = controls[0]["offset"]
+    elif y >= float(controls[-1]["y"]):
+        offset = controls[-1]["offset"]
+    else:
+        for lower, upper in zip(controls, controls[1:]):
+            lower_y, upper_y = float(lower["y"]), float(upper["y"])
+            if lower_y <= y <= upper_y:
+                blend = smoothstep((y - lower_y) / (upper_y - lower_y))
+                offset = [
+                    float(lower["offset"][axis]) * (1.0 - blend)
+                    + float(upper["offset"][axis]) * blend
+                    for axis in range(3)
+                ]
+                break
+    return tuple(point[axis] + float(offset[axis]) for axis in range(3))
+
+
+def apply_object_transform(point, object_transform):
+    transformed = point
+    if object_transform.get("pathOffsets"):
+        transformed = apply_path_offsets(transformed, object_transform["pathOffsets"])
+    if object_transform.get("radialContraction"):
+        transformed = contract_around_humerus(
+            transformed,
+            object_transform["radialContraction"],
+        )
+    return transformed
+
+
 def transformed_geometry(geometry, mirror, scale, translation, object_transform=None):
     positions = []
     normals = []
@@ -181,11 +216,8 @@ def transformed_geometry(geometry, mirror, scale, translation, object_transform=
             point[1] * scale + translation[1],
             point[2] * scale + translation[2],
         )
-        if object_transform and object_transform.get("radialContraction"):
-            transformed = contract_around_humerus(
-                transformed,
-                object_transform["radialContraction"],
-            )
+        if object_transform:
+            transformed = apply_object_transform(transformed, object_transform)
         x = -transformed[0] if mirror else transformed[0]
         nx = -normal[0] if mirror else normal[0]
         positions.append((x, transformed[1], transformed[2]))
@@ -200,9 +232,6 @@ def transformed_geometry(geometry, mirror, scale, translation, object_transform=
 
 
 def validate_local_correction(geometry, scale, translation, object_transform):
-    settings = object_transform.get("radialContraction")
-    if not settings:
-        return None
     before, _, _ = transformed_geometry(geometry, False, scale, translation)
     after, _, _ = transformed_geometry(
         geometry,
@@ -211,40 +240,50 @@ def validate_local_correction(geometry, scale, translation, object_transform):
         translation,
         object_transform,
     )
-    axis_x, axis_z = map(float, settings["axisXZ"])
-    _, zero_x = map(float, settings["lateralXRange"])
-    changed_radii_before = []
-    changed_radii_after = []
+    radial_settings = object_transform.get("radialContraction")
+    changed_radii_before = [] if radial_settings else None
+    changed_radii_after = [] if radial_settings else None
     max_displacement = 0.0
     medial_displacement = 0.0
+    changed_vertices = 0
     for original, corrected in zip(before, after):
         displacement = math.dist(original, corrected)
         max_displacement = max(max_displacement, displacement)
-        if original[0] >= zero_x:
-            medial_displacement = max(medial_displacement, displacement)
         if displacement > 1e-8:
-            changed_radii_before.append(math.hypot(original[0] - axis_x, original[2] - axis_z))
-            changed_radii_after.append(math.hypot(corrected[0] - axis_x, corrected[2] - axis_z))
-    if not changed_radii_before:
+            changed_vertices += 1
+        if radial_settings:
+            axis_x, axis_z = map(float, radial_settings["axisXZ"])
+            _, zero_x = map(float, radial_settings["lateralXRange"])
+            if original[0] >= zero_x:
+                medial_displacement = max(medial_displacement, displacement)
+            if displacement > 1e-8:
+                changed_radii_before.append(math.hypot(original[0] - axis_x, original[2] - axis_z))
+                changed_radii_after.append(math.hypot(corrected[0] - axis_x, corrected[2] - axis_z))
+    if not changed_vertices:
         raise ValueError("Configured local correction did not move any vertices")
-    if medial_displacement > 1e-8:
+    if radial_settings and medial_displacement > 1e-8:
         raise ValueError("Axillary-nerve correction moved the protected medial origin")
-    if sum(changed_radii_after) >= sum(changed_radii_before):
+    if radial_settings and sum(changed_radii_after) >= sum(changed_radii_before):
         raise ValueError("Axillary-nerve correction did not reduce the lateral radius")
-    if max_displacement > 0.025:
-        raise ValueError("Axillary-nerve correction exceeded the 25 mm displacement guardrail")
-    return {
-        "changedVertices": len(changed_radii_before),
+    max_allowed = float(object_transform.get("maxDisplacement", 0.025))
+    if max_displacement > max_allowed:
+        raise ValueError(
+            f"Local correction exceeded its {max_allowed * 1000:.1f} mm displacement guardrail"
+        )
+    metrics = {
+        "changedVertices": changed_vertices,
         "maxDisplacementMillimeters": round(max_displacement * 1000, 3),
-        "meanRadiusBeforeMillimeters": round(
+    }
+    if radial_settings:
+        metrics["meanRadiusBeforeMillimeters"] = round(
             sum(changed_radii_before) / len(changed_radii_before) * 1000,
             3,
-        ),
-        "meanRadiusAfterMillimeters": round(
+        )
+        metrics["meanRadiusAfterMillimeters"] = round(
             sum(changed_radii_after) / len(changed_radii_after) * 1000,
             3,
-        ),
-    }
+        )
+    return metrics
 
 
 def main():
@@ -321,14 +360,22 @@ def main():
             })
 
     concepts = []
+    entries_by_source = {entry["sourceObject"]: entry for entry in config["objects"]}
     for concept in config["concepts"]:
         by_side = {}
         for side in ("right", "left"):
             elements = [
                 part["id"]
                 for part in parts
-                if part["conceptId"] == f"open3d:upper-limb:concept:{concept['slug']}:{side}"
+                if part["laterality"] == side
+                and (
+                    entries_by_source[part["sourceObjectId"]]["concept"] == concept["slug"]
+                    or concept["slug"]
+                    in entries_by_source[part["sourceObjectId"]].get("parents", [])
+                )
             ]
+            if not elements:
+                raise ValueError(f"Concept has no mapped geometry: {concept['slug']}:{side}")
             by_side[side] = elements
             concepts.append({
                 "id": f"open3d:upper-limb:concept:{concept['slug']}:{side}",

@@ -41,11 +41,14 @@ to compare against the unmodified BodyParts3D atlas.
 - License terms: https://creativecommons.org/licenses/by-sa/4.0/
 - Attribution: Open3DModel upper limb by the Open3DModel project and contributors, CC BY-SA 4.0
 
-Adaptations: eighteen right-sided nerve and brachial-plexus objects were selected,
+Adaptations: thirty-three right-sided nerve and brachial-plexus objects were selected,
 renamed for Terminologia-compatible search, and mirrored to produce explicit left
 geometry. Mirrored triangle winding and normals were corrected. A bone-anchor
 translation aligns the pack to BodyParts3D, and the lateral segment of the
 axillary nerve was locally contracted toward the humeral axis to follow the
-surgical neck beneath the deltoid more closely. Geometry is kept in a separate
-manifest and binary pack with source-prefixed identifiers. Exact parameters and
-medical references are recorded in `scripts/data/open3d-upper-limb-pilot.json`.
+surgical neck beneath the deltoid more closely. The ulnar nerve immediately
+distal to the cubital tunnel was moved anteriorly to enter the flexor compartment.
+Selected radial, median, musculocutaneous, and ulnar terminal branches were added
+as independently searchable concepts. Geometry is kept in a separate manifest
+and binary pack with source-prefixed identifiers. Exact parameters and medical
+references are recorded in `scripts/data/open3d-upper-limb-pilot.json`.
