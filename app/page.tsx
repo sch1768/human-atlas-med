@@ -32,6 +32,13 @@ const FEATURED_ORGANS: { name: string; label: string; color: string }[] = [
   { name: 'trachea', label: 'Trachea (기관)', color: '#b98991' },
 ];
 
+const CAMERA_VIEWS: { id: View; label: string; title: string }[] = [
+  { id: 'three-quarter', label: '사선', title: '사선 보기' },
+  { id: 'front', label: '앞', title: '앞면 보기' },
+  { id: 'side', label: '옆', title: '옆면 보기' },
+  { id: 'back', label: '뒤', title: '뒷면 보기' },
+];
+
 export default function Home() {
   const detailTitle = useRef<HTMLHeadingElement>(null);
   const [atlas, setAtlas] = useState<Atlas | null>(null), [state, setState] = useState(initial), [progress, setProgress] = useState(0), [error, setError] = useState(''), [panel, setPanel] = useState<'layers' | 'search' | null>(null), [details, setDetails] = useState(false), [about, setAbout] = useState(false), [query, setQuery] = useState(''), [chosen, setChosen] = useState<Concept | null>(null), [showQuickPicks, setShowQuickPicks] = useState(true), [selectedResultIndex, setSelectedResultIndex] = useState(-1);
@@ -167,6 +174,13 @@ export default function Home() {
   const reset = () => { setHideHistory([]); setSelectedRegion(null); setSelectedSubregion(null); setSelectedSpace(null); setState(s => ({ ...initial, visible: DEFAULT_VISIBLE, reset: s.reset + 1, hidden: [], focusTargetIds: undefined })); setChosen(null); setDetails(false); setPanel(null); };
   const toggleLeftPanel = () => { const open = panel !== 'layers'; setLeftPanelOpen(open); setPanel(open ? 'layers' : null); setDetails(false); };
   const openPanel = (next: 'layers' | 'search') => { setDetails(false); setLeftPanelOpen(false); setPanel(p => p === next ? null : next); };
+  const openLayerTab = (tab: 'systems' | 'regions' | 'spaces') => {
+    const shouldClose = panel === 'layers' && layerTab === tab;
+    setLayerTab(tab);
+    setDetails(false);
+    setLeftPanelOpen(false);
+    setPanel(shouldClose ? null : 'layers');
+  };
 
   const handleSelectRegion = (regionId: RegionId) => {
     setHideHistory([]);
@@ -290,14 +304,20 @@ export default function Home() {
 
   const activeRegionObj = REGIONS.find(r => r.id === selectedRegion);
 
-  return <main className={`studio ${panel ? "panel-open" : ""}`}>
+  return <main className={`studio ${panel ? `panel-open panel-${panel}` : ''} ${details ? 'details-open' : ''}`}>
     {atlas && <AnatomyScene atlas={atlas} state={{ ...state, inspectorOpen: details && selectedParts.length > 0 }} onSelect={choosePart} onProgress={n => { setProgress(n); if (n === 100) setError(''); }} onError={setError} />}
     <div className="vignette" />
     <header className="identity"><div className="eyebrow"><span className="status-dot" /> INTERACTIVE ANATOMY</div><h1>Human Atlas<Badge variant="outline" className="edition">3D</Badge></h1><div className="identity-meta">{atlas ? atlas.parts.length.toLocaleString() : '2,234'} modeled pieces <span>·</span> BodyParts3D</div></header>
     <nav className="top-actions" aria-label="Explorer panels">
-      <Button variant="ghost" className={`icon-button ${leftPanelOpen ? 'active' : ''}`} aria-label="Toggle system layers" title="좌측 패널 접기/펼치기 (Toggle Sidebar)" onClick={toggleLeftPanel}><Layers3 size={18} /></Button>
-      <Button variant="ghost" className={panel === 'search' ? 'active' : ''} onClick={() => openPanel('search')} aria-label="Search anatomy"><Search size={18} /><span>구조·용어 검색</span><kbd>/</kbd></Button>
+      <Button variant="ghost" className={`icon-button desktop-layers-trigger ${leftPanelOpen ? 'active' : ''}`} aria-label="Toggle system layers" title="좌측 패널 접기/펼치기 (Toggle Sidebar)" onClick={toggleLeftPanel}><Layers3 size={18} /></Button>
+      <Button variant="ghost" className={`desktop-search-trigger ${panel === 'search' ? 'active' : ''}`} onClick={() => openPanel('search')} aria-label="Search anatomy"><Search size={18} /><span>구조·용어 검색</span><kbd>/</kbd></Button>
       <Button variant="ghost" className="icon-button" aria-label="About this atlas" title="학습 가이드 & PWA 안내" onClick={() => { setDetails(false); setPanel(null); setAbout(true); }}><Info size={18} /></Button>
+    </nav>
+    <nav className="mobile-explorer glass" aria-label="빠른 해부 탐색">
+      <Button variant="ghost" className={panel === 'search' ? 'active' : ''} aria-pressed={panel === 'search'} onClick={() => openPanel('search')}><Search size={15} /><span>검색</span></Button>
+      <Button variant="ghost" className={panel === 'layers' && layerTab === 'systems' ? 'active' : ''} aria-pressed={panel === 'layers' && layerTab === 'systems'} onClick={() => openLayerTab('systems')}>계통</Button>
+      <Button variant="ghost" className={panel === 'layers' && layerTab === 'regions' ? 'active' : ''} aria-pressed={panel === 'layers' && layerTab === 'regions'} onClick={() => openLayerTab('regions')}>부위</Button>
+      <Button variant="ghost" className={panel === 'layers' && layerTab === 'spaces' ? 'active' : ''} aria-pressed={panel === 'layers' && layerTab === 'spaces'} onClick={() => openLayerTab('spaces')}>임상공간</Button>
     </nav>
     <section className={`layers-panel glass ${panel === 'layers' ? 'mobile-open' : ''} ${!leftPanelOpen ? 'desktop-hidden' : ''}`} aria-label="Anatomical layers">
       <div className="panel-heading">
@@ -569,7 +589,7 @@ export default function Home() {
         </div>
       )}
     </section>}
-    <nav className={`view-controls glass ${(details && selectedParts.length > 0) || panel === 'search' ? 'shifted' : ''}`} aria-label="Camera controls">{(['three-quarter', 'front', 'side', 'back'] as View[]).map((v, i) => <Button variant="ghost" key={v} className={state.view === v ? 'active' : ''} aria-pressed={state.view === v} onClick={() => setState(s => ({ ...s, view: v, reset: s.reset + 1, rotate: false }))} title={`${v} view`} aria-label={`${v} view`}><span>{['¾', '앞', '옆', '뒤'][i]}</span></Button>)}<i /><Button variant="ghost" aria-label={state.rotate ? 'Pause rotation' : 'Rotate body'} title="Auto rotate" className={state.rotate ? 'active' : ''} onClick={() => setState(s => ({ ...s, rotate: !state.rotate }))}>{state.rotate ? <Pause size={17} /> : <RotateCw size={18} />}</Button><Button variant="ghost" aria-label="카메라 원위치" title="카메라 원위치 (레이어 유지)" onClick={() => setState(s => ({ ...s, reset: s.reset + 1, view: 'three-quarter', rotate: false }))}><RotateCcw size={17} /></Button></nav>
+    <nav className={`view-controls glass ${(details && selectedParts.length > 0) || panel === 'search' ? 'shifted' : ''}`} aria-label="Camera controls">{CAMERA_VIEWS.map(v => <Button variant="ghost" key={v.id} className={state.view === v.id ? 'active' : ''} aria-pressed={state.view === v.id} onClick={() => setState(s => ({ ...s, view: v.id, reset: s.reset + 1, rotate: false }))} title={v.title} aria-label={v.title}><span>{v.label}</span></Button>)}<i /><Button variant="ghost" aria-label={state.rotate ? '회전 멈춤' : '자동 회전'} title="자동 회전" className={state.rotate ? 'active' : ''} onClick={() => setState(s => ({ ...s, rotate: !state.rotate }))}>{state.rotate ? <Pause size={17} /> : <RotateCw size={18} />}</Button><Button variant="ghost" aria-label="카메라 원위치" title="카메라 원위치 (레이어 유지)" onClick={() => setState(s => ({ ...s, reset: s.reset + 1, view: 'three-quarter', rotate: false }))}><RotateCcw size={17} /></Button></nav>
     {((!details && state.selected.length > 0) || (state.hidden?.length ?? 0) > 0) && <div className="floating-dock glass" role="toolbar" aria-label="Dissection tools">{!details && state.selected.length > 0 && <><Button variant="ghost" onClick={() => setState(s => ({ ...s, focusTargetIds: s.selected, focusNonce: (s.focusNonce ?? 0) + 1 }))} title="Focus on structure (F)"><Focus size={15} /><span>확대 Focus</span><kbd>F</kbd></Button><Button variant="ghost" onClick={hideSelected} title="Hide structure (H)"><EyeOff size={15} /><span>숨기기</span><kbd>H</kbd></Button><Button variant="ghost" aria-pressed={!!state.ghost && !state.isolate} className={state.ghost && !state.isolate ? 'active' : ''} onClick={() => setState(s => ({ ...s, ghost: !s.ghost, isolate: false, isolatedPartIds: [], focusTargetIds: s.selected, focusNonce: (s.focusNonce ?? 0) + 1 }))} title="Toggle Ghost mode (G)"><Layers3 size={15} /><span>주변 반투명{state.ghost && !state.isolate ? ' · ON' : ''}</span><kbd>G</kbd></Button><Button variant="ghost" className={state.isolate ? 'active' : ''} onClick={toggleIsolate} title="Isolate structure (I)"><span>{state.isolate ? '주변 함께 보기' : '단독 보기 Isolate'}</span><kbd>I</kbd></Button></>}{(state.hidden?.length ?? 0) > 0 && <>{!details && state.selected.length > 0 && <i className="dock-sep" />}<Button variant="ghost" onClick={undoHide} disabled={!hideHistory.length} title="Undo hide (U)"><Undo2 size={15} /><span>숨기기 취소 ({hideHistory.length})</span><kbd>U</kbd></Button><Button variant="ghost" onClick={resetHidden} title="Unhide all structures"><span>숨김 복원</span></Button></>}</div>}
     <footer className="studio-footer"><span>드래그: 회전 · 휠/핀치: 확대 · 구조 선택: 상세 보기</span></footer>
     {progress < 100 && !error && <div className="loading glass" role="status"><Activity size={18} /><div><strong>3D 모델 불러오는 중</strong><span>{progress}% · Loading {atlas?.parts.length.toLocaleString() ?? '2,234'} pieces</span><div className="loading-track"><i style={{ width: `${progress}%` }} /></div></div></div>}

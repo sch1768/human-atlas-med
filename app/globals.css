@@ -1011,3 +1011,16 @@ h1 .edition{font-family:inherit;font-weight:500;font-size:10px;letter-spacing:.0
 .relationship-chip{display:grid;grid-template-columns:88px minmax(0,1fr);gap:10px;text-align:left;align-items:center}
 .rel-tag{display:flex;align-items:center;justify-content:center;width:88px;height:36px;padding:4px 6px;border-radius:5px;font-size:11px;line-height:1.25;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;text-align:center}
 .rel-name{min-width:0;text-align:left;white-space:normal;overflow-wrap:anywhere}
+
+/* Mobile keeps the four primary discovery paths visible and thumb-reachable. */
+.mobile-explorer{display:none}
+@media(max-width:767px){
+ .top-actions .desktop-layers-trigger,.top-actions .desktop-search-trigger{display:none}
+ .mobile-explorer{position:absolute;z-index:28;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr 1fr 1.25fr;gap:3px;padding:5px;border-radius:14px;background:#fffffff5}
+ .mobile-explorer button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:48px;padding:0 5px;border-radius:9px;font-size:12px;font-weight:600;color:#60717f;white-space:nowrap}
+ .mobile-explorer button.active{background:#263b48;color:#fff;box-shadow:0 2px 5px #18253618}
+ .panel-search .mobile-explorer,.details-open .mobile-explorer{display:none}
+ .layers-panel.mobile-open{bottom:calc(76px + env(safe-area-inset-bottom))!important;max-height:min(62dvh,calc(100dvh - 185px))!important}
+ .studio-footer{display:none}
+ .view-controls button:first-child{width:52px}
+}

@@ -110,30 +110,32 @@ if (isolateMode < 0.5 && ghostMode > 0.5) {
    lastState=null;loaded++;onProgress(Math.round(loaded/atlas.chunks.length*100));dirty=true;
   };
   (async()=>{try{let cursor=0;await Promise.all(Array.from({length:3},async()=>{while(cursor<atlas.chunks.length){const i=cursor++;await loadChunk(i);}}));if(!disposed){ready=true;dirty=true;}}catch(e){if(!disposed)onError(e instanceof Error?e.message:'Could not load the anatomy.');}})();
+  const focusViewport=()=>{
+   const w=el.clientWidth,h=el.clientHeight,mobile=w<768;
+   let left=mobile?14:20,right=w-(mobile?14:20),top=mobile?110:95,bottom=h-(mobile?92:35);
+   const rect=(selector:string)=>{const node=document.querySelector<HTMLElement>(selector);return node&&node.getClientRects().length?node.getBoundingClientRect():null;};
+   const layer=rect('.layers-panel'),sheet=rect('.detail-sheet'),toolbar=rect('.view-controls'),mobileNav=rect('.mobile-explorer');
+   if(!mobile&&layer)left=layer.right+20;
+   if(!mobile&&toolbar)right=Math.min(right,toolbar.left-20);
+   if(sheet){if(mobile)bottom=sheet.top-18;else right=sheet.left-65;}
+   if(mobile&&toolbar)top=Math.max(top,toolbar.bottom+12);
+   if(mobile&&mobileNav)bottom=Math.min(bottom,mobileNav.top-12);
+   return {w,h,left,right,top,bottom};
+  };
   const fit=(view:string,extent=0)=>{
-   camera.clearViewOffset();
-   const aspect=camera.aspect,mobile=el.clientWidth<768,normalDistance=mobile?Math.max(4.5,1.8*el.clientHeight/Math.max(160,el.clientHeight-350)/(2*Math.tan(T.MathUtils.degToRad(camera.fov/2)))):4;
+   const mobile=el.clientWidth<768,normalDistance=mobile?4.5:3.72;
    const reservedHeight=mobile?350:270;const availableAspect=Math.max(.35,(el.clientWidth-(mobile?40:340))/Math.max(160,el.clientHeight-reservedHeight));const atlasDistance=Math.max(packingHeight,packingWidth/availableAspect)/(2*Math.tan(T.MathUtils.degToRad(camera.fov/2)))*(el.clientHeight/Math.max(160,el.clientHeight-reservedHeight))*1.08;
    const distance=T.MathUtils.lerp(normalDistance,Math.max(.2,atlasDistance),extent);if(extent>.8)view='front';
    const direction=view==='front'?new T.Vector3(0,.02,1):view==='back'?new T.Vector3(0,.02,-1):view==='side'?new T.Vector3(1,.02,0):new T.Vector3(.35,.06,1).normalize();
-   controls.target.set(extent>.1&&el.clientWidth>767?-packingWidth*.12:0,extent>.1||mobile?.85:.68,0);camera.position.copy(controls.target).addScaledVector(direction,distance);controls.update();dirty=true;
+   controls.target.set(extent>.1&&el.clientWidth>767?-packingWidth*.12:0,extent>.1||mobile?.85:.68,0);camera.position.copy(controls.target).addScaledVector(direction,distance);
+   if(extent<.01){const {w,h,top,bottom}=focusViewport();camera.setViewOffset(w,h,0,h/2-(top+bottom)/2,w,h);}else camera.clearViewOffset();
+   controls.update();dirty=true;
   };
   const resize=()=>{layoutKey='';lastState=null;renderer.setPixelRatio(Math.min(devicePixelRatio,el.clientWidth<768||el.clientHeight<600?1.5:2));camera.aspect=el.clientWidth/el.clientHeight;camera.updateProjectionMatrix();renderer.setSize(el.clientWidth,el.clientHeight);fit(latest.current.view,amount);if(latest.current.selected.length)triggerFlyTo(latest.current.selected);};const observer=new ResizeObserver(resize);observer.observe(el);
   const raycaster=new T.Raycaster(),pointer=new T.Vector2(),tap=new PointerTap(),worldBox=new T.Box3(),hitPoint=new T.Vector3();
   const down=(e:PointerEvent)=>{hover.hidden=true;tap.down(e.pointerId,e.clientX,e.clientY,e.pointerType==='touch'?12:5);};
   const move=(e:PointerEvent)=>{tap.move(e.pointerId,e.clientX,e.clientY);if(e.buttons||amount<.5||e.pointerType==='touch'){hover.hidden=true;return;}const rect=el.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top,index=findTarget(x,y,12);hover.hidden=index<0;renderer.domElement.style.cursor=index<0?'grab':'pointer';if(index>=0){hover.textContent=atlas.parts[index].name;hover.style.left=`${Math.max(8,Math.min(x+14,el.clientWidth-260))}px`;hover.style.top=`${Math.max(8,Math.min(y+18,el.clientHeight-55))}px`;}};
   const cancel=(e:PointerEvent)=>tap.cancel(e.pointerId);
-  const focusViewport=()=>{
-   const w=el.clientWidth,h=el.clientHeight,mobile=w<768;
-   let left=20,right=w-20,top=mobile?110:95,bottom=h-50;
-   const rect=(selector:string)=>{const node=document.querySelector<HTMLElement>(selector);return node&&node.getClientRects().length?node.getBoundingClientRect():null;};
-   const layer=rect('.layers-panel'),sheet=rect('.detail-sheet');
-   if(!mobile&&layer)left=layer.right+20;
-   if(sheet){if(mobile)bottom=sheet.top-18;else right=sheet.left-65;}
-   const toolbar=rect('.view-controls');
-   if(mobile&&toolbar&&getComputedStyle(document.querySelector('.view-controls')!).visibility!=='hidden')top=Math.max(top,toolbar.bottom+12);
-   return {w,h,left,right,top,bottom};
-  };
   const triggerFlyTo=(selectedIds:string[])=>{
    if(!selectedIds||selectedIds.length===0)return;
    const selectedSet=new Set(selectedIds);
