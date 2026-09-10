@@ -1024,3 +1024,27 @@ h1 .edition{font-family:inherit;font-weight:500;font-size:10px;letter-spacing:.0
  .studio-footer{display:none}
  .view-controls button:first-child{width:52px}
 }
+
+/* Camera groups share one vertical rail on desktop. On phones the direction
+   selector moves beside the info action when space permits, with utilities in
+   the same compact strip. The redundant keyboard-oriented dock is omitted. */
+.camera-directions,.camera-utilities{display:flex;flex-direction:column;gap:2px}
+.about-sheet .structure-title:focus{outline:none}
+@media(max-width:767px){
+ .floating-dock{display:none!important}
+ .view-controls{top:max(18px,env(safe-area-inset-top))!important;right:max(64px,calc(env(safe-area-inset-right) + 64px))!important;left:auto!important;transform:none!important;flex-direction:row!important;width:auto!important;max-width:none!important;margin:0!important;padding:4px!important}
+ .camera-directions,.camera-utilities{flex-direction:row;gap:1px}
+ .view-controls>i{width:1px;height:28px;margin:8px 3px}
+ .camera-directions button{width:38px!important;height:44px}.camera-directions button:first-child{width:46px!important}
+ .camera-utilities button{width:36px!important;height:44px}
+}
+@media(max-width:480px){
+ .view-controls{top:max(76px,calc(env(safe-area-inset-top) + 70px))!important;right:max(12px,env(safe-area-inset-right))!important}
+}
+@media(max-width:350px){
+ .camera-directions button{width:34px!important}.camera-directions button:first-child{width:42px!important}
+ .camera-utilities button{width:34px!important}
+}
+@media(max-height:600px) and (orientation:landscape) and (max-width:767px){
+ .view-controls{top:max(16px,env(safe-area-inset-top))!important;right:max(64px,calc(env(safe-area-inset-right) + 64px))!important}
+}

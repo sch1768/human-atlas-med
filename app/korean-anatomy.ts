@@ -830,6 +830,57 @@ export function getHanjaName(name: string): string | null {
 }
 
 /**
+ * Clinically common vessel abbreviations. Abbreviations are matched as whole
+ * queries so short forms such as PA, RA, and SV do not create substring noise.
+ * A target may intentionally resolve to multiple structures (for example PA
+ * resolves to both pulmonary and popliteal arteries).
+ */
+const VASCULAR_ABBREVIATIONS: Record<string, string[]> = {
+  ao: ['aorta'],
+  ca: ['celiac artery', 'celiac trunk'],
+  ct: ['celiac artery', 'celiac trunk'],
+  sma: ['superior mesenteric artery'],
+  ima: ['inferior mesenteric artery'],
+  ra: ['renal artery'],
+  ivc: ['inferior vena cava'],
+  pv: ['portal vein', 'pulmonary vein'],
+  smv: ['superior mesenteric vein'],
+  sv: ['splenic vein'],
+  hv: ['hepatic vein'],
+  svc: ['superior vena cava'],
+  pa: ['pulmonary artery', 'popliteal artery'],
+  lmca: ['left main coronary artery', 'trunk of left coronary artery'],
+  lm: ['left main coronary artery', 'trunk of left coronary artery'],
+  lad: ['left anterior descending artery', 'anterior descending branch of left coronary artery', 'anterior interventricular branch of left coronary artery'],
+  lcx: ['left circumflex artery', 'circumflex branch of left coronary artery'],
+  rca: ['right coronary artery'],
+  cca: ['common carotid artery'],
+  ica: ['internal carotid artery'],
+  eca: ['external carotid artery'],
+  aca: ['anterior cerebral artery'],
+  mca: ['middle cerebral artery'],
+  pca: ['posterior cerebral artery'],
+  va: ['vertebral artery'],
+  ba: ['basilar artery'],
+  acom: ['anterior communicating artery'],
+  pcom: ['posterior communicating artery'],
+  cia: ['common iliac artery'],
+  eia: ['external iliac artery'],
+  cfa: ['common femoral artery', 'femoral artery'],
+  sfa: ['superficial femoral artery', 'femoral artery'],
+  gsv: ['great saphenous vein'],
+};
+
+function includesWholePhrase(name: string, phrase: string): boolean {
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?:^|\\b)${escaped}\\b`).test(name);
+}
+
+export function isVascularAbbreviation(searchTerm: string): boolean {
+  return searchTerm.trim().length > 0 && searchTerm.trim().toLowerCase().replace(/[.\s-]/g, '') in VASCULAR_ABBREVIATIONS;
+}
+
+/**
  * 3-Way 검색 매칭 함수 (영문, 신용어, 구용어)
  * term이 영문 명칭, 한글 신용어, 한글 구용어 중 어느 하나라도 포함되면 true 반환.
  */
@@ -838,6 +889,13 @@ export function matchesSearchTerm(name: string, searchTerm: string): boolean {
   if (!q) return false;
 
   const lowerName = name.toLowerCase();
+  const abbreviation = q.replace(/[.\s-]/g, '');
+  const vesselTargets = VASCULAR_ABBREVIATIONS[abbreviation];
+  if (vesselTargets) {
+    if (abbreviation === 'cfa' || abbreviation === 'sfa') return /^(?:left |right )?(?:common |superficial )?femoral artery$/.test(lowerName);
+    return vesselTargets.some(target => includesWholePhrase(lowerName, target));
+  }
+
   // 1. 영문 검색 매칭
   if (lowerName.includes(q)) return true;
 
