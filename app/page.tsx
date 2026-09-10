@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import AnatomyScene from './scene';
-import { DEFAULT_VISIBLE, SYSTEMS, EXPLANATIONS, explanation, type Atlas, type Concept, type SceneState, type SystemId, type View } from './anatomy';
+import { DEFAULT_VISIBLE, SYSTEMS, EXPLANATIONS, explanation, mergeAtlasPack, type Atlas, type Concept, type SceneState, type SystemId, type View } from './anatomy';
 import { getDisplayName, getHanjaName, matchesSearchTerm, getKoreanTerms } from './korean-anatomy';
 import { buildCompositeConcepts } from './composite-concepts';
 import { REGIONS, getRegionPartIds, type RegionId, type SubregionId } from './regional-anatomy';
@@ -54,7 +54,7 @@ export default function Home() {
   const [collapsedRegions, setCollapsedRegions] = useState<Record<string, boolean>>({});
   const [summaryExpanded, setSummaryExpanded] = useState(true);
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
-  useEffect(() => { const abort = new AbortController(); setProgress(0); setError(''); setAtlas(null); setChosen(null); setDetails(false); setState({ ...initial, visible: DEFAULT_VISIBLE }); fetch('/models/atlas.json', { signal: abort.signal }).then(r => { if (!r.ok) throw new Error('The anatomy catalogue could not be loaded.'); return r.json(); }).then(data => setAtlas(data as Atlas)).catch(e => { if (e.name !== 'AbortError') setError(e.message); }); return () => abort.abort(); }, []);
+  useEffect(() => { const abort = new AbortController(); setProgress(0); setError(''); setAtlas(null); setChosen(null); setDetails(false); setState({ ...initial, visible: DEFAULT_VISIBLE }); const load=async()=>{const read=async(url:string)=>{const response=await fetch(url,{signal:abort.signal});if(!response.ok)throw new Error('The anatomy catalogue could not be loaded.');return response.json() as Promise<Atlas>;};const base=await read('/models/atlas.json');const pilot=new URLSearchParams(window.location.search).get('pilot');const data=pilot==='open3d-upper'?mergeAtlasPack(base,await read('/models/open3d-upper-limb-pilot.json')):base;setAtlas(data);};void load().catch(e=>{if(e.name!=='AbortError')setError(e.message);});return()=>abort.abort();},[]);
   const hideSelected = () => {
     if (!state.selected.length) return;
     setHideHistory(history => [...history.slice(-29), state]);
@@ -307,7 +307,7 @@ export default function Home() {
   return <main className={`studio ${panel ? `panel-open panel-${panel}` : ''} ${details ? 'details-open' : ''}`}>
     {atlas && <AnatomyScene atlas={atlas} state={{ ...state, inspectorOpen: details && selectedParts.length > 0 }} onSelect={choosePart} onProgress={n => { setProgress(n); if (n === 100) setError(''); }} onError={setError} />}
     <div className="vignette" />
-    <header className="identity"><div className="eyebrow"><span className="status-dot" /> INTERACTIVE ANATOMY</div><h1>Human Atlas<Badge variant="outline" className="edition">3D</Badge></h1><div className="identity-meta">{atlas ? atlas.parts.length.toLocaleString() : '2,234'} modeled pieces <span>·</span> BodyParts3D</div></header>
+    <header className="identity"><div className="eyebrow"><span className="status-dot" /> INTERACTIVE ANATOMY</div><h1>Human Atlas<Badge variant="outline" className="edition">3D</Badge></h1><div className="identity-meta">{atlas ? atlas.parts.length.toLocaleString() : '2,234'} modeled pieces <span>·</span> {atlas?.source??'BodyParts3D'}</div></header>
     <nav className="top-actions" aria-label="Explorer panels">
       <Button variant="ghost" className={`icon-button desktop-layers-trigger ${leftPanelOpen ? 'active' : ''}`} aria-label="Toggle system layers" title="좌측 패널 접기/펼치기 (Toggle Sidebar)" onClick={toggleLeftPanel}><Layers3 size={18} /></Button>
       <Button variant="ghost" className={`desktop-search-trigger ${panel === 'search' ? 'active' : ''}`} onClick={() => openPanel('search')} aria-label="Search anatomy"><Search size={18} /><span>구조·용어 검색</span><kbd>/</kbd></Button>

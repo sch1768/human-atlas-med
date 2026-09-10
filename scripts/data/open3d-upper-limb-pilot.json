@@ -1,0 +1,43 @@
+{
+  "source": {
+    "name": "Open3DModel",
+    "version": "Upper limb, July 2025",
+    "url": "https://anatomytool.org/open3dmodel-create",
+    "archiveUrl": "https://caskanatomy.info/open3dmodelfiles/upper-limb/upper-limb-obj.zip",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attribution": "Open3DModel upper limb by the Open3DModel project and contributors, CC BY-SA 4.0"
+  },
+  "transform": {
+    "scale": 1,
+    "translation": [0, 0, 0]
+  },
+  "objects": [
+    { "sourceObject": "Ulnar_nerve.r", "slug": "ulnar-nerve", "name": "Ulnar nerve", "concept": "ulnar-nerve" },
+    { "sourceObject": "Radial_nerve.r", "slug": "radial-nerve", "name": "Radial nerve", "concept": "radial-nerve" },
+    { "sourceObject": "Musculocutaneus_nerve.r", "slug": "musculocutaneous-nerve", "name": "Musculocutaneous nerve", "concept": "musculocutaneous-nerve" },
+    { "sourceObject": "Median_nerve.r", "slug": "median-nerve", "name": "Median nerve", "concept": "median-nerve" },
+    { "sourceObject": "Axillary_nerve_-_superior_lateral_br_cutaneous_nerve.r", "slug": "axillary-nerve", "name": "Axillary nerve", "concept": "axillary-nerve" },
+    { "sourceObject": "C5_root.r", "slug": "brachial-plexus-c5-root", "name": "C5 root of brachial plexus", "concept": "brachial-plexus" },
+    { "sourceObject": "C6_root.r", "slug": "brachial-plexus-c6-root", "name": "C6 root of brachial plexus", "concept": "brachial-plexus" },
+    { "sourceObject": "C7_root.r", "slug": "brachial-plexus-c7-root", "name": "C7 root of brachial plexus", "concept": "brachial-plexus" },
+    { "sourceObject": "C8_root.r", "slug": "brachial-plexus-c8-root", "name": "C8 root of brachial plexus", "concept": "brachial-plexus" },
+    { "sourceObject": "T1_root.r", "slug": "brachial-plexus-t1-root", "name": "T1 root of brachial plexus", "concept": "brachial-plexus" },
+    { "sourceObject": "Superior_trunk_of_brachial_plexus.r", "slug": "brachial-plexus-superior-trunk", "name": "Superior trunk of brachial plexus", "concept": "brachial-plexus" },
+    { "sourceObject": "Middle_trunk_of_brachial_plexus.r", "slug": "brachial-plexus-middle-trunk", "name": "Middle trunk of brachial plexus", "concept": "brachial-plexus" },
+    { "sourceObject": "Inferior_trunk_of_brachial_plexus.r", "slug": "brachial-plexus-inferior-trunk", "name": "Inferior trunk of brachial plexus", "concept": "brachial-plexus" },
+    { "sourceObject": "Anterior_divisions_of_brachial_plexus.r", "slug": "brachial-plexus-anterior-divisions", "name": "Anterior divisions of brachial plexus", "concept": "brachial-plexus" },
+    { "sourceObject": "Posterior_divisions_of_brachial_plexus.r", "slug": "brachial-plexus-posterior-divisions", "name": "Posterior divisions of brachial plexus", "concept": "brachial-plexus" },
+    { "sourceObject": "Lateral_cord_of_brachial_plexus.r", "slug": "brachial-plexus-lateral-cord", "name": "Lateral cord of brachial plexus", "concept": "brachial-plexus" },
+    { "sourceObject": "Medial_cord_of_brachial_plexus.r", "slug": "brachial-plexus-medial-cord", "name": "Medial cord of brachial plexus", "concept": "brachial-plexus" },
+    { "sourceObject": "Posterior_cord_of_brachial_plexus.r", "slug": "brachial-plexus-posterior-cord", "name": "Posterior cord of brachial plexus", "concept": "brachial-plexus" }
+  ],
+  "concepts": [
+    { "slug": "brachial-plexus", "name": "Brachial plexus" },
+    { "slug": "axillary-nerve", "name": "Axillary nerve" },
+    { "slug": "musculocutaneous-nerve", "name": "Musculocutaneous nerve" },
+    { "slug": "median-nerve", "name": "Median nerve" },
+    { "slug": "ulnar-nerve", "name": "Ulnar nerve" },
+    { "slug": "radial-nerve", "name": "Radial nerve" }
+  ]
+}

@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {createExplosionLayout} from '../app/explosion-layout.ts';
 import {PointerTap} from '../app/pointer-tap.ts';
 import {atlasTools} from '../app/agent-tools.ts';
+import {mergeAtlasPack} from '../app/anatomy.ts';
 
 for (const file of ['atlas.json']) {
   const atlas=JSON.parse(await readFile(new URL(`../public/models/${file}`,import.meta.url)));
@@ -38,4 +39,19 @@ tap.down(1,10,10,12);tap.down(2,20,20,12);assert.equal(tap.up(2,20,20),false);as
 tap.down(1,10,10,5);tap.cancel(1);assert.equal(tap.up(1,10,10),false);
 tap.down(1,10,10,5);assert.equal(tap.up(1,10,10),true);
 assert.equal(createExplosionLayout([]).cells.size,0);
+
+const baseAtlas=JSON.parse(await readFile(new URL('../public/models/atlas.json',import.meta.url)));
+const upperPilot=JSON.parse(await readFile(new URL('../public/models/open3d-upper-limb-pilot.json',import.meta.url)));
+const combined=mergeAtlasPack(baseAtlas,upperPilot);
+assert.equal(combined.parts.length,baseAtlas.parts.length+upperPilot.parts.length);
+assert.equal(combined.chunks.length,baseAtlas.chunks.length+upperPilot.chunks.length);
+assert.ok(combined.parts.every(part=>part.chunk<combined.chunks.length));
+let pilotSelection=null;
+const [findPilot,inspectPilot]=atlasTools(combined,concept=>{pilotSelection=concept;});
+for(const query of ['radial nerve','median nerve','ulnar nerve','axillary nerve','musculocutaneous nerve','brachial plexus']){
+ const matches=findPilot.execute({query});
+ assert.ok(matches.length>0,`${query}: missing from combined atlas search`);
+ inspectPilot.execute({id:matches[0].id});
+ assert.ok(pilotSelection.elements.length>0,`${query}: empty pilot selection`);
+}
 console.log('Tap, drag, multitouch, cancellation, and empty-view checks passed.');

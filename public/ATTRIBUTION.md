@@ -27,3 +27,21 @@ Earlier repository revisions included female reference anatomy: Kristen Browne a
 Adaptations: translated native meter/Y-up coordinates onto the stage, coincident vertices welded and source normals averaged, geometry simplified with a 0.2% per-structure relative error bound, and normals quantized. Colors and display systems are curated for this interface. All 888 source meshes are represented, with 1,073 source nodes available as selectable individual or compound concepts.
 
 This is a reference assembly with whole-body surface and selected organs, including female reproductive anatomy. Its skeleton and muscle coverage is partial. It is not a complete model of every human structure or a single-person scan. Eight placenta/umbilical structures are classified under Pregnancy reference and hidden by default.
+
+## Optional Open3DModel upper-limb pilot
+
+The `codex/newdatabase` pilot can load a separately packaged selection of upper-limb
+peripheral nerves from Open3DModel when the URL contains
+`?pilot=open3d-upper`. The default BodyParts3D atlas remains unchanged.
+
+- Project and downloads: https://anatomytool.org/open3dmodel-create
+- Source snapshot: Open3DModel Upper limb, July 2025
+- Source object archive: `upper-limb-obj.zip`
+- License: Creative Commons Attribution-ShareAlike 4.0 International
+- License terms: https://creativecommons.org/licenses/by-sa/4.0/
+- Attribution: Open3DModel upper limb by the Open3DModel project and contributors, CC BY-SA 4.0
+
+Adaptations: eighteen right-sided nerve and brachial-plexus objects were selected,
+renamed for Terminologia-compatible search, and mirrored to produce explicit left
+geometry. Mirrored triangle winding and normals were corrected. Geometry is kept
+in a separate manifest and binary pack with source-prefixed identifiers.
