@@ -46,6 +46,102 @@ def compute_normals(positions, indices):
     return [normalized(value) for value in result]
 
 
+def tube_geometry(paths, radius=0.0012, radial_segments=8):
+    positions = []
+    indices = []
+    for path in paths:
+        if len(path) < 2:
+            raise ValueError("Generated nerve paths need at least two points")
+        ring_start = len(positions)
+        for point_index, point in enumerate(path):
+            previous = path[max(0, point_index - 1)]
+            following = path[min(len(path) - 1, point_index + 1)]
+            tangent = normalized(tuple(following[axis] - previous[axis] for axis in range(3)))
+            reference = (0.0, 1.0, 0.0) if abs(tangent[1]) < 0.9 else (1.0, 0.0, 0.0)
+            first = normalized((
+                tangent[1] * reference[2] - tangent[2] * reference[1],
+                tangent[2] * reference[0] - tangent[0] * reference[2],
+                tangent[0] * reference[1] - tangent[1] * reference[0],
+            ))
+            second = normalized((
+                tangent[1] * first[2] - tangent[2] * first[1],
+                tangent[2] * first[0] - tangent[0] * first[2],
+                tangent[0] * first[1] - tangent[1] * first[0],
+            ))
+            for segment in range(radial_segments):
+                angle = 2.0 * math.pi * segment / radial_segments
+                radial = tuple(
+                    first[axis] * math.cos(angle) + second[axis] * math.sin(angle)
+                    for axis in range(3)
+                )
+                positions.append(tuple(point[axis] + radial[axis] * radius for axis in range(3)))
+        for path_index in range(len(path) - 1):
+            lower = ring_start + path_index * radial_segments
+            upper = lower + radial_segments
+            for segment in range(radial_segments):
+                next_segment = (segment + 1) % radial_segments
+                indices.extend((lower + segment, upper + segment, upper + next_segment))
+                indices.extend((lower + segment, upper + next_segment, lower + next_segment))
+        start_center = len(positions)
+        positions.append(tuple(path[0]))
+        end_center = len(positions)
+        positions.append(tuple(path[-1]))
+        end_ring = ring_start + (len(path) - 1) * radial_segments
+        for segment in range(radial_segments):
+            next_segment = (segment + 1) % radial_segments
+            indices.extend((start_center, ring_start + next_segment, ring_start + segment))
+            indices.extend((end_center, end_ring + segment, end_ring + next_segment))
+    return {
+        "positions": positions,
+        "normals": compute_normals(positions, indices),
+        "indices": indices,
+    }
+
+
+def filter_geometry_components(geometry, minimum_vertices):
+    parent = list(range(len(geometry["positions"])))
+
+    def find(index):
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    def union(left, right):
+        left, right = find(left), find(right)
+        if left != right:
+            parent[right] = left
+
+    indices = geometry["indices"]
+    for offset in range(0, len(indices), 3):
+        union(indices[offset], indices[offset + 1])
+        union(indices[offset], indices[offset + 2])
+    component_sizes = {}
+    for index in range(len(parent)):
+        root = find(index)
+        component_sizes[root] = component_sizes.get(root, 0) + 1
+    retained_roots = {
+        root for root, size in component_sizes.items() if size >= minimum_vertices
+    }
+    retained_indices = [
+        index for index in range(len(parent)) if find(index) in retained_roots
+    ]
+    if not retained_indices:
+        raise ValueError("Component filter removed all geometry")
+    remap = {old: new for new, old in enumerate(retained_indices)}
+    filtered_faces = []
+    for offset in range(0, len(indices), 3):
+        face = indices[offset : offset + 3]
+        if all(index in remap for index in face):
+            filtered_faces.extend(remap[index] for index in face)
+    positions = [geometry["positions"][index] for index in retained_indices]
+    return {
+        "positions": positions,
+        "normals": compute_normals(positions, filtered_faces),
+        "indices": filtered_faces,
+    }
+
+
 def parse_selected_objects(filename, selected):
     extracted = {}
     current_name = None
@@ -291,12 +387,30 @@ def main():
         raise SystemExit(__doc__)
     source_path = Path(sys.argv[1]).resolve()
     config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-    selected = {entry["sourceObject"] for entry in config["objects"]}
+    selected = {
+        entry["sourceObject"]
+        for entry in config["objects"]
+        if not entry.get("generatedPaths")
+    }
     geometries = parse_selected_objects(source_path, selected)
+    for entry in config["objects"]:
+        if entry.get("generatedPaths"):
+            geometries[entry["sourceObject"]] = tube_geometry(
+                entry["generatedPaths"],
+                float(entry.get("radius", 0.0012)),
+                int(entry.get("radialSegments", 8)),
+            )
+        component_filter = entry.get("componentFilter")
+        if component_filter:
+            geometries[entry["sourceObject"]] = filter_geometry_components(
+                geometries[entry["sourceObject"]],
+                int(component_filter["minimumVertices"]),
+            )
     transform = config.get("transform", {})
     scale = float(transform.get("scale", 1))
     translation = tuple(map(float, transform.get("translation", [0, 0, 0])))
     object_transforms = config.get("objectTransforms", {})
+    concepts_by_slug = {concept["slug"]: concept for concept in config["concepts"]}
 
     blob = bytearray()
     parts = []
@@ -312,19 +426,25 @@ def main():
     for entry in config["objects"]:
         geometry = geometries[entry["sourceObject"]]
         object_transform = object_transforms.get(entry["sourceObject"])
+        entry_scale = 1.0 if entry.get("coordinateSpace") == "atlas" else scale
+        entry_translation = (
+            (0.0, 0.0, 0.0)
+            if entry.get("coordinateSpace") == "atlas"
+            else translation
+        )
         if object_transform:
             correction_metrics[entry["sourceObject"]] = validate_local_correction(
                 geometry,
-                scale,
-                translation,
+                entry_scale,
+                entry_translation,
                 object_transform,
             )
         for side, mirror in (("right", False), ("left", True)):
             positions, normals, indices = transformed_geometry(
                 geometry,
                 mirror,
-                scale,
-                translation,
+                entry_scale,
+                entry_translation,
                 object_transform,
             )
             flat_positions = [value for point in positions for value in point]
@@ -340,15 +460,19 @@ def main():
                 [min(point[axis] for point in positions) for axis in range(3)],
                 [max(point[axis] for point in positions) for axis in range(3)],
             ]
-            part_id = f"open3d:upper-limb:{entry['slug']}:{side}"
+            namespace = entry.get("namespace", "open3d:upper-limb")
+            concept_namespace = concepts_by_slug[entry["concept"]].get(
+                "namespace", "open3d:upper-limb"
+            )
+            part_id = f"{namespace}:{entry['slug']}:{side}"
             parts.append({
                 "id": part_id,
                 "name": f"{side.title()} {entry['name']}",
-                "conceptId": f"open3d:upper-limb:concept:{entry['concept']}:{side}",
+                "conceptId": f"{concept_namespace}:concept:{entry['concept']}:{side}",
                 "system": "nervous",
-                "source": "Open3DModel",
+                "source": entry.get("source", "Open3DModel"),
                 "sourceObjectId": entry["sourceObject"],
-                "licenseId": "CC-BY-SA-4.0",
+                "licenseId": entry.get("licenseId", "CC-BY-SA-4.0"),
                 "laterality": side,
                 "chunk": 0,
                 "positions": position_offset,
@@ -362,6 +486,7 @@ def main():
     concepts = []
     entries_by_source = {entry["sourceObject"]: entry for entry in config["objects"]}
     for concept in config["concepts"]:
+        namespace = concept.get("namespace", "open3d:upper-limb")
         by_side = {}
         for side in ("right", "left"):
             elements = [
@@ -378,12 +503,12 @@ def main():
                 raise ValueError(f"Concept has no mapped geometry: {concept['slug']}:{side}")
             by_side[side] = elements
             concepts.append({
-                "id": f"open3d:upper-limb:concept:{concept['slug']}:{side}",
+                "id": f"{namespace}:concept:{concept['slug']}:{side}",
                 "name": f"{side.title()} {concept['name']}",
                 "elements": elements,
             })
         concepts.append({
-            "id": f"open3d:upper-limb:concept:{concept['slug']}",
+            "id": f"{namespace}:concept:{concept['slug']}",
             "name": concept["name"],
             "elements": by_side["right"] + by_side["left"],
         })
@@ -401,8 +526,10 @@ def main():
         "license": config["source"]["license"],
         "licenseUrl": config["source"]["licenseUrl"],
         "attribution": config["source"]["attribution"],
+        "sources": [config["source"], *config.get("additionalSources", [])],
         "registration": config.get("registration"),
         "adaptations": config.get("adaptations", []),
+        "geometryCorrections": config.get("geometryCorrections", {}),
         "correctionMetrics": correction_metrics,
         "parts": parts,
         "concepts": concepts,

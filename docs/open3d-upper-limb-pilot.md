@@ -53,7 +53,17 @@ posterior-interosseous, superficial, cutaneous, and dorsal digital branches;
 the musculocutaneous continuation as the lateral cutaneous nerve of the
 forearm; the recurrent branch of the median nerve; and the palmar, dorsal,
 deep, communicating, and digital branches of the ulnar nerve. Each branch is
-searchable independently and remains included when its parent nerve is selected.
+searchable independently. The radial cutaneous branches are intentionally kept
+out of the parent radial-nerve selection so that the clinically important trunk,
+deep branch/PIN, and superficial branch remain legible. The median palmar and
+proper/common digital branches and the suprascapular nerve are also included.
+
+Open3DModel does not supply the superficial cervical plexus or accessory nerve
+in this upper-limb snapshot. Five landmark-based schematic paths (great
+auricular, transverse cervical, lesser occipital, supraclavicular, and accessory
+nerves) are therefore packaged in the separate `curated:neck` namespace and
+attributed to this project rather than to Open3DModel. They are educational
+route guides, not source-derived surface reconstructions.
 
 ## Registration and axillary-nerve correction
 
@@ -92,9 +102,21 @@ then returns to the source path toward the wrist. The imported palmar and deep
 branches complete the route through the Guyon-canal region.
 
 The median-nerve trunk was retained without deformation. Its recurrent branch
-is now imported as a separate searchable structure. The musculocutaneous nerve
-is extended distally with the source object representing the lateral cutaneous
-nerve of the forearm.
+and palmar/digital branches are now imported as separate searchable structures.
+Distal digital paths are compressed by 11-21 mm, depending on the source
+object, so they terminate in the fingertip pads rather than extending beyond
+the distal phalanges. The posterior interosseous nerve is reduced to its single
+largest continuous trunk to remove detached proximal-forearm filaments. The
+musculocutaneous nerve is extended distally with the source object representing
+the lateral cutaneous nerve of the forearm.
+
+At the neck, a feathered 8-10 mm posterior depth correction keeps the imported
+brachial-plexus roots, trunks, and divisions deep to the superficial muscle
+envelope while retaining their interscalene relationship. Viewer-side
+BodyParts3D corrections move the right subclavian, axillary, and cephalic venous
+segments 6-8 mm deeper near the clavicle without rewriting the source atlas.
+The imported suprascapular nerve is retained from the superior trunk toward the
+suprascapular notch.
 
 - https://www.ncbi.nlm.nih.gov/books/NBK534840/
 - https://www.ncbi.nlm.nih.gov/books/NBK431063/

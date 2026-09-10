@@ -41,14 +41,22 @@ to compare against the unmodified BodyParts3D atlas.
 - License terms: https://creativecommons.org/licenses/by-sa/4.0/
 - Attribution: Open3DModel upper limb by the Open3DModel project and contributors, CC BY-SA 4.0
 
-Adaptations: thirty-three right-sided nerve and brachial-plexus objects were selected,
+Adaptations: thirty-nine right-sided nerve and brachial-plexus objects were selected,
 renamed for Terminologia-compatible search, and mirrored to produce explicit left
-geometry. Mirrored triangle winding and normals were corrected. A bone-anchor
-translation aligns the pack to BodyParts3D, and the lateral segment of the
-axillary nerve was locally contracted toward the humeral axis to follow the
-surgical neck beneath the deltoid more closely. The ulnar nerve immediately
-distal to the cubital tunnel was moved anteriorly to enter the flexor compartment.
-Selected radial, median, musculocutaneous, and ulnar terminal branches were added
-as independently searchable concepts. Geometry is kept in a separate manifest
-and binary pack with source-prefixed identifiers. Exact parameters and medical
-references are recorded in `scripts/data/open3d-upper-limb-pilot.json`.
+geometry (78 Open3DModel meshes total). Mirrored triangle winding and normals were
+corrected. A bone-anchor translation aligns the pack to BodyParts3D. Local,
+feathered corrections place the axillary nerve at the surgical neck, move the
+ulnar nerve into the flexor compartment, keep the brachial-plexus roots and trunks
+deep in the neck, trim digital branches inside the fingertip pads, and retain one
+continuous posterior-interosseous trunk. Selected radial, median,
+musculocutaneous, ulnar, and suprascapular branches are independently searchable.
+
+The pack also contains five bilateral, project-authored schematic routes for the
+great auricular, transverse cervical, lesser occipital, supraclavicular, and
+accessory nerves (10 meshes total). These use the separate `curated:neck`
+namespace, carry `PROJECT-AUTHORED` provenance, and are not attributed to
+Open3DModel. Near-clavicular depth corrections for three BodyParts3D venous
+meshes are applied only at viewer runtime. Geometry remains in a separate
+manifest and binary pack with source-prefixed identifiers. Exact parameters,
+provenance, and medical references are recorded in
+`scripts/data/open3d-upper-limb-pilot.json`.

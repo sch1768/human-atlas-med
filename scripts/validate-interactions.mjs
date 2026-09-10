@@ -5,6 +5,7 @@ import {PointerTap} from '../app/pointer-tap.ts';
 import {atlasTools} from '../app/agent-tools.ts';
 import {mergeAtlasPack} from '../app/anatomy.ts';
 import {matchesSearchTerm} from '../app/korean-anatomy.ts';
+import {correctedPositions} from '../app/geometry-corrections.ts';
 
 for (const file of ['atlas.json']) {
   const atlas=JSON.parse(await readFile(new URL(`../public/models/${file}`,import.meta.url)));
@@ -49,6 +50,9 @@ assert.equal(combined.chunks.length,baseAtlas.chunks.length+upperPilot.chunks.le
 assert.ok(combined.parts.every(part=>part.chunk<combined.chunks.length));
 assert.deepEqual(combined.registration,upperPilot.registration);
 assert.equal(combined.adaptations.length,upperPilot.adaptations.length);
+assert.deepEqual(combined.geometryCorrections,upperPilot.geometryCorrections);
+const corrected=correctedPositions(new Float32Array([0,1.34,0,0,1.36,0,0,1.38,0]),{pathOffsets:[{y:1.34,offset:[0,0,0]},{y:1.38,offset:[0,0,-.008]}]});
+assert.deepEqual([...corrected].map(value=>Math.abs(value)<1e-9?0:Math.round(value*1000)),[0,1340,0,0,1360,-4,0,1380,-8]);
 let pilotSelection=null;
 const [findPilot,inspectPilot]=atlasTools(combined,concept=>{pilotSelection=concept;});
 for(const query of ['radial nerve','median nerve','ulnar nerve','axillary nerve','musculocutaneous nerve','brachial plexus']){
@@ -57,15 +61,16 @@ for(const query of ['radial nerve','median nerve','ulnar nerve','axillary nerve'
  inspectPilot.execute({id:matches[0].id});
  assert.ok(pilotSelection.elements.length>0,`${query}: empty pilot selection`);
 }
-for(const [slug,pieces] of [['radial-nerve',16],['ulnar-nerve',14],['median-nerve',4],['musculocutaneous-nerve',4]]){
- const concept=combined.concepts.find(item=>item.id===`open3d:upper-limb:concept:${slug}`);
+for(const [slug,pieces] of [['radial-nerve',10],['ulnar-nerve',14],['median-nerve',14],['musculocutaneous-nerve',4],['brachial-plexus',28],['cervical-plexus-superficial-branches',8]]){
+ const namespace=slug==='cervical-plexus-superficial-branches'?'curated:neck':'open3d:upper-limb';
+ const concept=combined.concepts.find(item=>item.id===`${namespace}:concept:${slug}`);
  assert.equal(concept.elements.length,pieces,`${slug}: incomplete parent-nerve branch membership`);
 }
-for(const query of ['posterior interosseous nerve','superficial branch of radial nerve','recurrent branch of median nerve','lateral cutaneous nerve of forearm','deep branch of ulnar nerve']){
+for(const query of ['posterior interosseous nerve','superficial branch of radial nerve','recurrent branch of median nerve','proper palmar digital nerves of median nerve','lateral cutaneous nerve of forearm','deep branch of ulnar nerve','suprascapular nerve','great auricular nerve','transverse cervical nerve','lesser occipital nerve','accessory nerve']){
  const matches=findPilot.execute({query});
- assert.ok(matches.some(match=>match.id.startsWith('open3d:')),`${query}: missing searchable branch concept`);
+ assert.ok(matches.some(match=>match.id.startsWith('open3d:')||match.id.startsWith('curated:')),`${query}: missing searchable branch concept`);
 }
-for(const [name,query] of [['Posterior interosseous nerve','뒤뼈사이신경'],['Posterior interosseous nerve','PIN'],['Recurrent branch of median nerve','반회지'],['Recurrent branch of median nerve','엄지두덩되돌이가지'],['Lateral cutaneous nerve of forearm','lateral antebrachial cutaneous nerve'],['Deep branch of ulnar nerve','자신경깊은가지']]){
+for(const [name,query] of [['Posterior interosseous nerve','뒤뼈사이신경'],['Posterior interosseous nerve','PIN'],['Recurrent branch of median nerve','반회지'],['Recurrent branch of median nerve','엄지두덩되돌이가지'],['Lateral cutaneous nerve of forearm','lateral antebrachial cutaneous nerve'],['Deep branch of ulnar nerve','자신경깊은가지'],['Great auricular nerve','큰귓바퀴신경'],['Transverse cervical nerve','가로목신경'],['Accessory nerve','CN XI']]){
  assert.equal(matchesSearchTerm(name,query),true,`${query}: missing Korean terminology search`);
 }
 console.log('Tap, drag, multitouch, cancellation, and empty-view checks passed.');

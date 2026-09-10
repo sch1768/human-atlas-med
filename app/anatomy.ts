@@ -21,7 +21,8 @@ export interface Concept {id:string;name:string;elements:string[]}
 export interface AtlasSource {name:string;version:string;license?:string;licenseUrl?:string;attribution?:string}
 export interface AtlasRegistration {method:string;anchors?:string[];translationMeters?:number[];anchorCenterResidualMillimeters?:Record<string,number>}
 export interface AtlasAdaptation {structure:string;method:string;reason:string;references?:string[]}
-export interface Atlas {version:string;sex?:'male'|'female';source?:string;scope?:string;license?:string;licenseUrl?:string;attribution?:string;sources?:AtlasSource[];registration?:AtlasRegistration;adaptations?:AtlasAdaptation[];parts:Part[];concepts:Concept[];chunks:{url:string;bytes:number;gzip?:string;gzipBytes?:number}[];triangles:number}
+export interface GeometryCorrection {pathOffsets:{y:number;offset:[number,number,number]}[]}
+export interface Atlas {version:string;sex?:'male'|'female';source?:string;scope?:string;license?:string;licenseUrl?:string;attribution?:string;sources?:AtlasSource[];registration?:AtlasRegistration;adaptations?:AtlasAdaptation[];geometryCorrections?:Record<string,GeometryCorrection>;parts:Part[];concepts:Concept[];chunks:{url:string;bytes:number;gzip?:string;gzipBytes?:number}[];triangles:number}
 export function mergeAtlasPack(base:Atlas,pack:Atlas):Atlas{
  const partIds=new Set(base.parts.map(part=>part.id)),conceptIds=new Set(base.concepts.map(concept=>concept.id));
  for(const part of pack.parts)if(partIds.has(part.id))throw new Error(`Duplicate anatomy part ID: ${part.id}`);
@@ -36,6 +37,7 @@ export function mergeAtlasPack(base:Atlas,pack:Atlas):Atlas{
   sources:[...baseSources,...packSources],
   registration:pack.registration??base.registration,
   adaptations:[...(base.adaptations??[]),...(pack.adaptations??[])],
+  geometryCorrections:{...(base.geometryCorrections??{}),...(pack.geometryCorrections??{})},
   parts:[...base.parts,...pack.parts.map(part=>({...part,chunk:part.chunk+base.chunks.length}))],
   concepts:[...base.concepts,...pack.concepts],
   chunks:[...base.chunks,...pack.chunks],

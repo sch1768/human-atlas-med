@@ -12,6 +12,12 @@ for(const c of atlas.concepts){assert.ok(c.elements.length);for(const id of c.el
 assert.equal(tris,atlas.triangles);
 if(filename.startsWith('open3d-')){
  assert.equal(atlas.source,'Open3DModel');assert.equal(atlas.license,'CC BY-SA 4.0');assert.ok(atlas.attribution);
- for(const p of atlas.parts){assert.ok(p.id.startsWith('open3d:'));assert.equal(p.source,'Open3DModel');assert.equal(p.licenseId,'CC-BY-SA-4.0');assert.ok(['left','right'].includes(p.laterality));}
+ const sourceNames=new Set(atlas.sources.map(source=>source.name));
+ for(const p of atlas.parts){
+  assert.ok(sourceNames.has(p.source),`${p.id}: unregistered source ${p.source}`);
+  if(p.source==='Open3DModel'){assert.ok(p.id.startsWith('open3d:'));assert.equal(p.licenseId,'CC-BY-SA-4.0');}
+  else{assert.ok(p.id.startsWith('curated:'));assert.equal(p.licenseId,'PROJECT-AUTHORED');}
+  assert.ok(['left','right'].includes(p.laterality));
+ }
 }
 console.log(`Verified ${ids.size} individually indexed meshes, ${atlas.concepts.length} complete concept mappings, ${tris.toLocaleString()} triangles, and every binary buffer.`);
