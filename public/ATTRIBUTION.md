@@ -41,22 +41,20 @@ to compare against the unmodified BodyParts3D atlas.
 - License terms: https://creativecommons.org/licenses/by-sa/4.0/
 - Attribution: Open3DModel upper limb by the Open3DModel project and contributors, CC BY-SA 4.0
 
-Adaptations: thirty-nine right-sided nerve and brachial-plexus objects were selected,
-renamed for Terminologia-compatible search, and mirrored to produce explicit left
-geometry (78 Open3DModel meshes total). Mirrored triangle winding and normals were
-corrected. A bone-anchor translation aligns the pack to BodyParts3D. Local,
-feathered corrections place the axillary nerve at the surgical neck, move the
-ulnar nerve into the flexor compartment, keep the brachial-plexus roots and trunks
-deep in the neck, trim digital branches inside the fingertip pads, and retain one
-continuous posterior-interosseous trunk. Selected radial, median,
-musculocutaneous, ulnar, and suprascapular branches are independently searchable.
+Adaptations: twenty-six right-sided nerve and brachial-plexus source objects were
+selected, renamed for Terminologia-compatible search, and mirrored to produce
+52 explicit left/right meshes. Mirrored triangle winding and normals were
+corrected. A bone-anchor translation aligns the pack to BodyParts3D. Local
+registration corrections place the axillary nerve near the surgical neck, move
+the ulnar nerve into the flexor compartment, and keep the source brachial-plexus
+roots and trunks within the deep neck envelope. Small detached cutaneous
+components are removed from the radial trunk, and only the main connected
+source component of the posterior-interosseous nerve is retained.
 
-The pack also contains five bilateral, project-authored schematic routes for the
-great auricular, transverse cervical, lesser occipital, supraclavicular, and
-accessory nerves (10 meshes total). These use the separate `curated:neck`
-namespace, carry `PROJECT-AUTHORED` provenance, and are not attributed to
-Open3DModel. Near-clavicular depth corrections for three BodyParts3D venous
-meshes are applied only at viewer runtime. Geometry remains in a separate
-manifest and binary pack with source-prefixed identifiers. Exact parameters,
-provenance, and medical references are recorded in
-`scripts/data/open3d-upper-limb-pilot.json`.
+Seven source objects containing detached radial cutaneous filaments or terminal
+digital/cutaneous twigs are excluded because they do not remain inside the
+BodyParts3D arm, hand, and fingertip envelopes after rigid registration. No
+replacement nerve paths or procedurally generated nerve meshes are included.
+Geometry is kept in a separate manifest and binary pack with source-prefixed
+identifiers. Exact parameters, exclusions, and medical references are recorded
+in `scripts/data/open3d-upper-limb-pilot.json`.

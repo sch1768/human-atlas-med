@@ -855,28 +855,6 @@ export const ANATOMICAL_RELATIONSHIPS: AnatomicalRelationship[] = [
     relationshipLabel: '세 번째 분지 (3rd branch)',
     clinicalNote: '대동맥활의 세 번째 분지로 좌측 상지 및 척추동맥(vertebral artery)을 통해 뇌 기저부로 혈액 공급.',
   },
-
-  // 41. Upper-limb pilot: clinically important shoulder and neck routes
-  {
-    id: 'rel-suprascapular-notch',
-    sourceConcept: 'suprascapular nerve',
-    sourceLabel: 'Suprascapular nerve (어깨위신경)',
-    targetConcept: 'suprascapular notch',
-    targetLabel: 'Suprascapular notch (어깨뼈패임)',
-    type: 'passes-through',
-    relationshipLabel: '통과 (Course)',
-    clinicalNote: '위신경줄기에서 갈라져 위가로어깨인대 아래의 어깨뼈패임을 지나며, 포착 시 가시위근·가시아래근 약화가 나타날 수 있음.',
-  },
-  {
-    id: 'rel-accessory-posterior-triangle',
-    sourceConcept: 'accessory nerve',
-    sourceLabel: 'Accessory nerve, CN XI (더부신경)',
-    targetConcept: 'posterior triangle of neck',
-    targetLabel: 'Posterior triangle of neck (뒤목삼각)',
-    type: 'passes-through',
-    relationshipLabel: '사선 주행 (Course)',
-    clinicalNote: '목빗근 뒤모서리에서 나와 뒤목삼각을 아래뒤쪽으로 가로질러 등세모근 깊은 면으로 들어가므로 림프절 생검 때 손상 위험이 큼.',
-  },
 ];
 
 /**

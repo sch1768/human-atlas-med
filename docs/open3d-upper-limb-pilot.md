@@ -48,22 +48,20 @@ relationship concepts to geometry:
 - ulnar nerve
 - radial nerve
 
-Following route review, the pilot now also includes the radial deep,
-posterior-interosseous, superficial, cutaneous, and dorsal digital branches;
-the musculocutaneous continuation as the lateral cutaneous nerve of the
-forearm; the recurrent branch of the median nerve; and the palmar, dorsal,
-deep, communicating, and digital branches of the ulnar nerve. Each branch is
-searchable independently. The radial cutaneous branches are intentionally kept
-out of the parent radial-nerve selection so that the clinically important trunk,
-deep branch/PIN, and superficial branch remain legible. The median palmar and
-proper/common digital branches and the suprascapular nerve are also included.
+Following route review, the pilot includes the radial deep,
+posterior-interosseous, and superficial branches; the musculocutaneous
+continuation as the lateral cutaneous nerve of the forearm; the recurrent
+branch of the median nerve; and the common palmar digital, deep, and
+communicating branches of the ulnar nerve. Each retained branch is searchable
+independently and remains included when its parent nerve is selected.
 
-Open3DModel does not supply the superficial cervical plexus or accessory nerve
-in this upper-limb snapshot. Five landmark-based schematic paths (great
-auricular, transverse cervical, lesser occipital, supraclavicular, and accessory
-nerves) are therefore packaged in the separate `curated:neck` namespace and
-attributed to this project rather than to Open3DModel. They are educational
-route guides, not source-derived surface reconstructions.
+No nerve geometry is procedurally drawn by this project. Seven Open3DModel
+objects containing diffuse or detached cutaneous/digital twigs are deliberately
+excluded because rigid registration places portions outside the BodyParts3D
+soft-tissue and fingertip envelope. The omitted source object IDs and reasons
+are recorded in `scripts/data/open3d-upper-limb-pilot.json`. Missing terminal
+coverage is preferable to presenting a plausible-looking but anatomically
+unreliable reconstructed path.
 
 ## Registration and axillary-nerve correction
 
@@ -93,30 +91,30 @@ The radial-nerve trunk already travels posteriorly and laterally around the
 humeral shaft in the source coordinates. Its course looked incomplete because
 the distal deep branch, posterior interosseous nerve, and superficial branch
 were not imported. Those objects now continue the route around the radial neck,
-through the supinator, and toward the dorsolateral hand.
+through the supinator, and toward the dorsolateral hand. The radial trunk keeps
+its single main connected source component while detached cutaneous strands are
+omitted. Only the main connected component of the source
+posterior-interosseous object is retained; detached thread-like components and
+the separately named radial cutaneous/digital source objects are not displayed.
 
 The ulnar-nerve trunk passed behind the medial epicondyle but remained in the
 posterior forearm for too long. A feathered path correction now moves the
 segment immediately distal to the cubital tunnel anteriorly by up to 32 mm,
-then returns to the source path toward the wrist. The imported palmar and deep
-branches complete the route through the Guyon-canal region.
+then returns to the source path toward the wrist. The common palmar digital,
+deep, and communicating source branches complete the proximal Guyon-canal and
+palmar route. Proper digital and diffuse cutaneous twigs are intentionally
+omitted because they extend beyond the registered BodyParts3D hand envelope.
 
 The median-nerve trunk was retained without deformation. Its recurrent branch
-and palmar/digital branches are now imported as separate searchable structures.
-Distal digital paths are compressed by 11-21 mm, depending on the source
-object, so they terminate in the fingertip pads rather than extending beyond
-the distal phalanges. The posterior interosseous nerve is reduced to its single
-largest continuous trunk to remove detached proximal-forearm filaments. The
-musculocutaneous nerve is extended distally with the source object representing
-the lateral cutaneous nerve of the forearm.
+is now imported as a separate searchable structure. The musculocutaneous nerve
+is extended distally with the source object representing the lateral cutaneous
+nerve of the forearm.
 
-At the neck, a feathered 8-10 mm posterior depth correction keeps the imported
-brachial-plexus roots, trunks, and divisions deep to the superficial muscle
-envelope while retaining their interscalene relationship. Viewer-side
-BodyParts3D corrections move the right subclavian, axillary, and cephalic venous
-segments 6-8 mm deeper near the clavicle without rewriting the source atlas.
-The imported suprascapular nerve is retained from the superior trunk toward the
-suprascapular notch.
+The Open3DModel brachial-plexus roots, trunks, and divisions are retained as
+source meshes and translated 8-10 mm posteriorly as a registration correction.
+Their vertices and topology are not redrawn. This keeps the interscalene and
+supraclavicular segments within the deep neck envelope while avoiding the
+unsupported addition of cervical-plexus or accessory-nerve paths.
 
 - https://www.ncbi.nlm.nih.gov/books/NBK534840/
 - https://www.ncbi.nlm.nih.gov/books/NBK431063/
