@@ -28,11 +28,11 @@ Adaptations: translated native meter/Y-up coordinates onto the stage, coincident
 
 This is a reference assembly with whole-body surface and selected organs, including female reproductive anatomy. Its skeleton and muscle coverage is partial. It is not a complete model of every human structure or a single-person scan. Eight placenta/umbilical structures are classified under Pregnancy reference and hidden by default.
 
-## Optional Open3DModel upper-limb pilot
+## Open3DModel upper-limb pilot
 
-The `codex/newdatabase` pilot can load a separately packaged selection of upper-limb
-peripheral nerves from Open3DModel when the URL contains
-`?pilot=open3d-upper`. The default BodyParts3D atlas remains unchanged.
+The `codex/newdatabase` branch loads a separately packaged selection of
+upper-limb peripheral nerves from Open3DModel by default. Append `?pilot=off`
+to compare against the unmodified BodyParts3D atlas.
 
 - Project and downloads: https://anatomytool.org/open3dmodel-create
 - Source snapshot: Open3DModel Upper limb, July 2025
@@ -43,5 +43,9 @@ peripheral nerves from Open3DModel when the URL contains
 
 Adaptations: eighteen right-sided nerve and brachial-plexus objects were selected,
 renamed for Terminologia-compatible search, and mirrored to produce explicit left
-geometry. Mirrored triangle winding and normals were corrected. Geometry is kept
-in a separate manifest and binary pack with source-prefixed identifiers.
+geometry. Mirrored triangle winding and normals were corrected. A bone-anchor
+translation aligns the pack to BodyParts3D, and the lateral segment of the
+axillary nerve was locally contracted toward the humeral axis to follow the
+surgical neck beneath the deltoid more closely. Geometry is kept in a separate
+manifest and binary pack with source-prefixed identifiers. Exact parameters and
+medical references are recorded in `scripts/data/open3d-upper-limb-pilot.json`.

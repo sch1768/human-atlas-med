@@ -1,4 +1,4 @@
-"""Build the opt-in Open3DModel upper-limb nerve pilot pack.
+"""Build the Open3DModel upper-limb nerve pilot pack.
 
 Usage:
     python scripts/convert-open3d-upper-limb.py PATH_TO_UPPER_LIMB_OBJ
@@ -126,23 +126,125 @@ def parse_selected_objects(filename, selected):
     return extracted
 
 
-def transformed_geometry(geometry, mirror, scale, translation):
+def smoothstep(value):
+    value = max(0.0, min(1.0, value))
+    return value * value * (3.0 - 2.0 * value)
+
+
+def contraction_weight(point, settings):
+    y_min, y_max = map(float, settings["yRange"])
+    feather = float(settings.get("yFeather", 0))
+    if not y_min <= point[1] <= y_max:
+        return 0.0
+    y_weight = 1.0
+    if feather > 0:
+        y_weight = min(
+            smoothstep((point[1] - y_min) / feather),
+            smoothstep((y_max - point[1]) / feather),
+        )
+    full_x, zero_x = map(float, settings["lateralXRange"])
+    if point[0] <= full_x:
+        x_weight = 1.0
+    elif point[0] >= zero_x:
+        x_weight = 0.0
+    else:
+        x_weight = smoothstep((zero_x - point[0]) / (zero_x - full_x))
+    return y_weight * x_weight
+
+
+def contract_around_humerus(point, settings):
+    weight = contraction_weight(point, settings)
+    if weight <= 0:
+        return point
+    axis_x, axis_z = map(float, settings["axisXZ"])
+    dx, dz = point[0] - axis_x, point[2] - axis_z
+    radius = math.hypot(dx, dz)
+    radius_floor = float(settings["radiusFloor"])
+    if radius <= radius_floor:
+        return point
+    target_radius = radius_floor + (radius - radius_floor) * float(settings["factor"])
+    adjusted_radius = radius + (target_radius - radius) * weight
+    ratio = adjusted_radius / radius
+    return (
+        axis_x + dx * ratio,
+        point[1],
+        axis_z + dz * ratio,
+    )
+
+
+def transformed_geometry(geometry, mirror, scale, translation, object_transform=None):
     positions = []
     normals = []
     for point, normal in zip(geometry["positions"], geometry["normals"]):
-        x = -point[0] if mirror else point[0]
-        nx = -normal[0] if mirror else normal[0]
-        positions.append((
-            x * scale + translation[0],
+        transformed = (
+            point[0] * scale + translation[0],
             point[1] * scale + translation[1],
             point[2] * scale + translation[2],
-        ))
+        )
+        if object_transform and object_transform.get("radialContraction"):
+            transformed = contract_around_humerus(
+                transformed,
+                object_transform["radialContraction"],
+            )
+        x = -transformed[0] if mirror else transformed[0]
+        nx = -normal[0] if mirror else normal[0]
+        positions.append((x, transformed[1], transformed[2]))
         normals.append(normalized((nx, normal[1], normal[2])))
     indices = list(geometry["indices"])
     if mirror:
         for offset in range(0, len(indices), 3):
             indices[offset + 1], indices[offset + 2] = indices[offset + 2], indices[offset + 1]
+    if object_transform:
+        normals = compute_normals(positions, indices)
     return positions, normals, indices
+
+
+def validate_local_correction(geometry, scale, translation, object_transform):
+    settings = object_transform.get("radialContraction")
+    if not settings:
+        return None
+    before, _, _ = transformed_geometry(geometry, False, scale, translation)
+    after, _, _ = transformed_geometry(
+        geometry,
+        False,
+        scale,
+        translation,
+        object_transform,
+    )
+    axis_x, axis_z = map(float, settings["axisXZ"])
+    _, zero_x = map(float, settings["lateralXRange"])
+    changed_radii_before = []
+    changed_radii_after = []
+    max_displacement = 0.0
+    medial_displacement = 0.0
+    for original, corrected in zip(before, after):
+        displacement = math.dist(original, corrected)
+        max_displacement = max(max_displacement, displacement)
+        if original[0] >= zero_x:
+            medial_displacement = max(medial_displacement, displacement)
+        if displacement > 1e-8:
+            changed_radii_before.append(math.hypot(original[0] - axis_x, original[2] - axis_z))
+            changed_radii_after.append(math.hypot(corrected[0] - axis_x, corrected[2] - axis_z))
+    if not changed_radii_before:
+        raise ValueError("Configured local correction did not move any vertices")
+    if medial_displacement > 1e-8:
+        raise ValueError("Axillary-nerve correction moved the protected medial origin")
+    if sum(changed_radii_after) >= sum(changed_radii_before):
+        raise ValueError("Axillary-nerve correction did not reduce the lateral radius")
+    if max_displacement > 0.025:
+        raise ValueError("Axillary-nerve correction exceeded the 25 mm displacement guardrail")
+    return {
+        "changedVertices": len(changed_radii_before),
+        "maxDisplacementMillimeters": round(max_displacement * 1000, 3),
+        "meanRadiusBeforeMillimeters": round(
+            sum(changed_radii_before) / len(changed_radii_before) * 1000,
+            3,
+        ),
+        "meanRadiusAfterMillimeters": round(
+            sum(changed_radii_after) / len(changed_radii_after) * 1000,
+            3,
+        ),
+    }
 
 
 def main():
@@ -155,9 +257,11 @@ def main():
     transform = config.get("transform", {})
     scale = float(transform.get("scale", 1))
     translation = tuple(map(float, transform.get("translation", [0, 0, 0])))
+    object_transforms = config.get("objectTransforms", {})
 
     blob = bytearray()
     parts = []
+    correction_metrics = {}
 
     def append(values, typecode):
         while len(blob) % 4:
@@ -168,8 +272,22 @@ def main():
 
     for entry in config["objects"]:
         geometry = geometries[entry["sourceObject"]]
+        object_transform = object_transforms.get(entry["sourceObject"])
+        if object_transform:
+            correction_metrics[entry["sourceObject"]] = validate_local_correction(
+                geometry,
+                scale,
+                translation,
+                object_transform,
+            )
         for side, mirror in (("right", False), ("left", True)):
-            positions, normals, indices = transformed_geometry(geometry, mirror, scale, translation)
+            positions, normals, indices = transformed_geometry(
+                geometry,
+                mirror,
+                scale,
+                translation,
+                object_transform,
+            )
             flat_positions = [value for point in positions for value in point]
             flat_normals = [
                 max(-32767, min(32767, round(value * 32767)))
@@ -232,10 +350,13 @@ def main():
         "version": config["source"]["version"],
         "sex": "male",
         "source": config["source"]["name"],
-        "scope": "Opt-in upper-limb nerve pilot",
+        "scope": "Upper-limb nerve pilot enabled by default on codex/newdatabase",
         "license": config["source"]["license"],
         "licenseUrl": config["source"]["licenseUrl"],
         "attribution": config["source"]["attribution"],
+        "registration": config.get("registration"),
+        "adaptations": config.get("adaptations", []),
+        "correctionMetrics": correction_metrics,
         "parts": parts,
         "concepts": concepts,
         "chunks": [{

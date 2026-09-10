@@ -46,6 +46,8 @@ const combined=mergeAtlasPack(baseAtlas,upperPilot);
 assert.equal(combined.parts.length,baseAtlas.parts.length+upperPilot.parts.length);
 assert.equal(combined.chunks.length,baseAtlas.chunks.length+upperPilot.chunks.length);
 assert.ok(combined.parts.every(part=>part.chunk<combined.chunks.length));
+assert.deepEqual(combined.registration,upperPilot.registration);
+assert.equal(combined.adaptations.length,upperPilot.adaptations.length);
 let pilotSelection=null;
 const [findPilot,inspectPilot]=atlasTools(combined,concept=>{pilotSelection=concept;});
 for(const query of ['radial nerve','median nerve','ulnar nerve','axillary nerve','musculocutaneous nerve','brachial plexus']){

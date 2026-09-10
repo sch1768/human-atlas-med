@@ -2,7 +2,8 @@
 
 This branch evaluates Open3DModel as a regional supplement to the BodyParts3D
 male reference atlas. It does not replace or modify the current BodyParts3D
-assets.
+assets. The supplement is enabled by default on `codex/newdatabase`; append
+`?pilot=off` only when a clean BodyParts3D comparison is needed.
 
 ## Source snapshot
 
@@ -50,6 +51,30 @@ relationship concepts to geometry:
 Digital and named cutaneous branches remain in the source audit, but should be
 added only after the six primary concepts pass registration and interaction QA.
 
+## Registration and axillary-nerve correction
+
+The initial zero-transform overlay visibly displaced the shoulder nerves. The
+current import applies a 3D translation of `(4.586, 8.862, 6.667) mm`, derived
+from the mean center offsets of the right clavicle, scapula, and humerus. After
+translation, residual center error is 6.35 mm at the clavicle, 2.30 mm at the
+scapula, and 6.00 mm at the humerus. These values describe anchor-center
+alignment, not full surface correspondence.
+
+The source object combines the axillary nerve with the superior lateral
+cutaneous nerve of the arm. Its lateral loop also sat superficial to the
+BodyParts3D deltoid. A feathered local deformation now contracts only the
+lateral shoulder segment toward the humeral axis. The medial origin is fixed,
+and the correction is mirrored after deformation so both sides remain
+geometrically symmetric.
+
+The target relationship follows the documented course through the quadrangular
+space, around the surgical neck of the humerus, and into the deltoid. This is a
+registration correction, not a claim that every terminal branch has completed
+expert anatomical validation.
+
+- https://www.ncbi.nlm.nih.gov/books/NBK493212/
+- https://pubmed.ncbi.nlm.nih.gov/9381311/
+
 ## Acceptance gates
 
 1. Compare Open3DModel and BodyParts3D clavicle, scapula, and humerus landmarks.
@@ -57,6 +82,7 @@ added only after the six primary concepts pass registration and interaction QA.
    replacement based on visible registration error.
 3. Namespace every new geometry ID with its source; do not reuse `FJ` IDs.
 4. Preserve per-object provenance and CC BY-SA attribution in generated data.
-5. Load the pilot pack on demand so the current initial download is unchanged.
+5. Load the pilot pack by default on `codex/newdatabase`, retaining
+   `?pilot=off` as a comparison escape hatch.
 6. Verify search, selection, isolate, ghost, regional anatomy, and clinical-space
    behavior for all six concepts on desktop and mobile.
